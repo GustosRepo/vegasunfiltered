@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Downtown street, concept artwork</title>
+  <desc id="desc">Original illustration of a downtown Las Vegas street at blue hour, with colorful signs, low buildings, and distant desert hills.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#292e42"/><stop offset=".62" stop-color="#794552"/><stop offset="1" stop-color="#d07a53"/></linearGradient>
+    <linearGradient id="street" x2="0" y2="1"><stop stop-color="#45404a"/><stop offset="1" stop-color="#202125"/></linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="872" cy="232" r="79" fill="#efb976" opacity=".8"/>
+  <path d="m0 440 150-128 100 72 165-189 147 189 154-127 156 131 120-151 208 173v244H0z" fill="#49404a"/>
+  <path d="M0 501h1200v299H0z" fill="#37333a"/>
+  <path d="M52 279h280v380H52zM861 312h286v347H861z" fill="#37383f"/>
+  <path d="M78 374h228v244H78zM892 401h224v217H892z" fill="#b35848"/>
+  <path d="M103 417h71v201h-71zM207 417h75v201h-75zM918 444h77v174h-77zM1026 444h69v174h-69z" fill="#f3bd75"/>
+  <path d="M103 417h71v201h-71zM207 417h75v201h-75zM918 444h77v174h-77zM1026 444h69v174h-69z" fill="#34313a" opacity=".72"/>
+  <path d="M390 800 520 520h150l158 280z" fill="url(#street)"/>
+  <path d="M587 800V522" stroke="#e4a765" stroke-width="6" stroke-dasharray="20 18" opacity=".8"/>
+  <path d="M427 312h112v17H427zM452 272h63v40h-63z" fill="#d87955"/>
+  <path d="M666 350h134v18H666zM690 309h86v41h-86z" fill="#e1a95e"/>
+  <g fill="#f6ca83">
+    <circle cx="138" cy="454" r="7"/><circle cx="245" cy="454" r="7"/>
+    <circle cx="955" cy="479" r="7"/><circle cx="1061" cy="479" r="7"/>
+  </g>
+  <path d="M0 739q290-41 576 3t624-2v60H0z" fill="#242529"/>
+</svg>

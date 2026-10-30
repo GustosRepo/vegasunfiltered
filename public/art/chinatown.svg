@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Neighborhood street, concept artwork</title>
+  <desc id="desc">Original illustration of a lively Las Vegas neighborhood street at dusk, with warm storefront lights and lanterns.</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#333448"/><stop offset=".7" stop-color="#a55a50"/><stop offset="1" stop-color="#e59c63"/></linearGradient></defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <path d="M0 489h1200v311H0z" fill="#28282d"/>
+  <path d="M35 220h420v437H35zM760 161h403v495H760z" fill="#383940"/>
+  <path d="M67 286h355v353H67zM800 232h328v407H800z" fill="#dba16b"/>
+  <path d="M67 286h355v88H67zM800 232h328v88H800z" fill="#9d493c"/>
+  <path d="M104 418h133v221H104zM272 418h114v221H272zM842 369h115v270H842zM994 369h96v270h-96z" fill="#403b42"/>
+  <path d="M104 418h133v221H104zM272 418h114v221H272zM842 369h115v270H842zM994 369h96v270h-96z" fill="#efb66e" opacity=".7"/>
+  <path d="M0 648h1200v152H0z" fill="#1d1e22"/>
+  <path d="m430 800 116-238h104l142 238z" fill="#343238"/>
+  <path d="M598 800v-238" stroke="#e0a36d" stroke-width="5" stroke-dasharray="22 20" opacity=".7"/>
+  <g fill="#ba5742" stroke="#efba74" stroke-width="4">
+    <path d="M495 260h51v88h-51zM505 242h31v18h-31zM495 348h51v13h-51z"/>
+    <path d="M650 280h51v88h-51zM660 262h31v18h-31zM650 368h51v13h-51z"/>
+    <path d="M702 421h36v62h-36zM709 408h22v13h-22zM702 483h36v10h-36z"/>
+  </g>
+  <g fill="#f5ca84">
+    <circle cx="119" cy="460" r="7"/><circle cx="178" cy="460" r="7"/><circle cx="287" cy="459" r="7"/>
+    <circle cx="874" cy="414" r="7"/><circle cx="1030" cy="414" r="7"/>
+  </g>
+</svg>

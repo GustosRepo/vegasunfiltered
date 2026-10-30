@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1050" role="img" aria-labelledby="title desc">
+  <title id="title">Las Vegas at dusk</title>
+  <desc id="desc">Original illustrated desert cityscape with a road leading toward distant buildings at sunset.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#181a25"/><stop offset=".48" stop-color="#67413e"/><stop offset="1" stop-color="#e38b55"/></linearGradient>
+    <linearGradient id="road" x2="0" y2="1"><stop stop-color="#403235"/><stop offset="1" stop-color="#17181a"/></linearGradient>
+    <radialGradient id="sun"><stop stop-color="#f8c58a"/><stop offset="1" stop-color="#d47b50"/></radialGradient>
+  </defs>
+  <rect width="1800" height="1050" fill="url(#sky)"/>
+  <circle cx="1260" cy="370" r="205" fill="url(#sun)" opacity=".8"/>
+  <path d="M0 620 120 530l100 76 120-178 95 187 90-105 119 134 114-191 105 170 113-95 116 135 107-180 112 149 101-121 128 117 79-46v290H0z" fill="#362d32"/>
+  <path d="M0 684h1800v366H0z" fill="#242225"/>
+  <g fill="#282326" stroke="#d89a6a" stroke-opacity=".55" stroke-width="3">
+    <path d="M210 417h83v267h-83zM305 493h99v191h-99zM422 448h68v236h-68zM1118 451h92v233h-92zM1225 385h118v299h-118zM1361 463h80v221h-80zM1454 424h111v260h-111z"/>
+  </g>
+  <g fill="#f3bd75" opacity=".8">
+    <path d="M230 443h15v23h-15zM260 443h15v23h-15zM230 489h15v23h-15zM327 520h14v22h-14zM367 520h14v22h-14zM1140 481h15v24h-15zM1174 481h15v24h-15zM1252 418h17v27h-17zM1295 418h17v27h-17zM1382 492h14v21h-14zM1480 452h16v24h-16zM1520 452h16v24h-16z"/>
+  </g>
+  <path d="M670 1050 811 680h178l181 370z" fill="url(#road)"/>
+  <path d="m871 1050 43-370h48l57 370z" fill="#c69b6b" opacity=".38"/>
+  <path d="m0 900 690-140M1800 884l-558-132" stroke="#dc8955" stroke-width="7" opacity=".5"/>
+  <g fill="#17191b">
+    <path d="M88 782h83v72H88zM108 748h44v42h-44zM1500 775h111v84h-111zM1530 732h51v47h-51z"/>
+    <path d="M44 859h170v20H44zM1471 859h170v20h-170z"/>
+  </g>
+  <g fill="#eea663">
+    <circle cx="107" cy="785" r="6"/><circle cx="155" cy="785" r="6"/><circle cx="1522" cy="785" r="7"/><circle cx="1590" cy="785" r="7"/>
+  </g>
+  <path d="M0 960q400-45 750 11t1050-9v88H0z" fill="#191a1c"/>
+</svg>

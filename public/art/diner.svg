@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Neighborhood diner, concept artwork</title>
+  <desc id="desc">Original illustration of a small diner glowing warmly at blue hour, with desert mountains in the background.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#34424c"/><stop offset="1" stop-color="#d58a5b"/></linearGradient>
+    <linearGradient id="window" x2="0" y2="1"><stop stop-color="#f9c578"/><stop offset="1" stop-color="#c25d3e"/></linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <path d="M0 455 150 280l112 112 169-205 174 228 173-162 118 155 140-201 164 178v218H0z" fill="#51505a"/>
+  <path d="M0 558h1200v242H0z" fill="#28272a"/>
+  <path d="M185 385h827v335H185z" fill="#ede0c9"/>
+  <path d="M155 371h891v72H155z" fill="#a84935"/>
+  <path d="M220 303h755l71 78H153z" fill="#33343a"/>
+  <path d="M241 458h300v207H241zM576 458h390v207H576z" fill="url(#window)" stroke="#333338" stroke-width="18"/>
+  <path d="M378 458v207M765 458v207" stroke="#38363a" stroke-width="14"/>
+  <path d="M169 689h871v24H169z" fill="#ba583a"/>
+  <text x="600" y="350" fill="#f5ead5" font-size="46" font-family="Arial,sans-serif" font-weight="700" letter-spacing="10" text-anchor="middle">OPEN LATE</text>
+  <g fill="#4e4850">
+    <path d="M50 670h115v74H50zM1030 670h123v74h-123z"/>
+    <path d="M78 647h57v24H78zM1066 647h57v24h-57z"/>
+  </g>
+  <g fill="#f2bc77">
+    <circle cx="103" cy="699" r="7"/><circle cx="149" cy="699" r="7"/><circle cx="1080" cy="699" r="7"/><circle cx="1127" cy="699" r="7"/>
+  </g>
+  <path d="M0 748h1200v52H0z" fill="#1e1f21"/>
+</svg>

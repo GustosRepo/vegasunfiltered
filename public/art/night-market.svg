@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Las Vegas night street, concept artwork</title>
+  <desc id="desc">Original illustration of a warm-lit city street after sunset with a small bar and distant mountains.</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#202638"/><stop offset="1" stop-color="#bd7256"/></linearGradient></defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="930" cy="197" r="76" fill="#e9b875" opacity=".82"/>
+  <path d="m0 470 115-120 81 72 176-224 162 226 122-125 133 145 133-177 116 173 162-115v292H0z" fill="#38343c"/>
+  <path d="M0 556h1200v244H0z" fill="#27262b"/>
+  <path d="M84 373h316v309H84zM800 333h316v349H800z" fill="#494048"/>
+  <path d="M84 373h316v75H84zM800 333h316v75H800z" fill="#b64e3e"/>
+  <path d="M124 482h99v151h-99zM259 482h102v151H259zM840 446h101v187H840zM974 446h101v187H974z" fill="#e9a963"/>
+  <path d="M124 482h99v151h-99zM259 482h102v151H259zM840 446h101v187H840zM974 446h101v187h-101z" fill="#373039" opacity=".72"/>
+  <path d="M456 800 540 559h116l111 241z" fill="#3c353b"/>
+  <path d="M600 800V560" stroke="#e3a46b" stroke-width="5" stroke-dasharray="18 19"/>
+  <path d="M0 675q275-47 501 8t699-10v127H0z" fill="#202024"/>
+  <g fill="#f7c17c"><circle cx="160" cy="520" r="7"/><circle cx="309" cy="520" r="7"/><circle cx="878" cy="486" r="7"/><circle cx="1018" cy="486" r="7"/></g>
+</svg>

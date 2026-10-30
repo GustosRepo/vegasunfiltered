@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Desert road, concept artwork</title>
+  <desc id="desc">Original illustration of a quiet desert highway leading toward distant mountains in the evening light.</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#394553"/><stop offset=".58" stop-color="#d1835d"/><stop offset="1" stop-color="#f0bd7d"/></linearGradient></defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="859" cy="329" r="108" fill="#f5cb91" opacity=".9"/>
+  <path d="m0 530 173-162 114 103 196-237 168 226 158-181 173 190 118-95v248H0z" fill="#54474a"/>
+  <path d="M0 572h1200v228H0z" fill="#5a514b"/>
+  <path d="m397 800 169-230h99l171 230z" fill="#39383d"/>
+  <path d="M615 800v-228" stroke="#eac081" stroke-width="7" stroke-dasharray="24 23"/>
+  <g fill="#353c35">
+    <path d="M75 629q-8-100 25-164 34 68 21 164zM104 518q-23-54 0-92 23 43 12 92z"/>
+    <path d="M1072 644q-12-123 34-206 43 86 23 206zM1100 491q-20-54 5-91 20 46 8 91z"/>
+    <path d="M236 684q-8-70 23-116 29 47 15 116zM949 690q-7-68 25-109 25 43 13 109z"/>
+  </g>
+  <path d="M0 741q300-35 620-10t580-21v90H0z" fill="#333b34"/>
+</svg>
