@@ -114,6 +114,21 @@ test("About page reflects the owner's perspective without invented identity clai
   await expect(page.getByRole("link", { name: "How I review", exact: true })).toHaveAttribute("href", "/editorial-policy");
 });
 
+test("AdSense verification is public-only and does not load advertising scripts", async ({ page }) => {
+  const adRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/googlesyndication\.com|doubleclick\.net|fundingchoicesmessages\.google\.com/.test(request.url())) adRequests.push(request.url());
+  });
+  await page.goto("/");
+  await expect(page.locator('meta[name="google-adsense-account"]')).toHaveAttribute("content", "ca-pub-8863066373093222");
+  await page.goto("/about");
+  await expect(page.locator('meta[name="google-adsense-account"]')).toHaveCount(1);
+  await expect(page.locator('script[src*="adsbygoogle"]')).toHaveCount(0);
+  await page.goto("/admin/login");
+  await expect(page.locator('meta[name="google-adsense-account"]')).toHaveCount(0);
+  expect(adRequests).toEqual([]);
+});
+
 test("unknown public story renders not-found UI and cannot be indexed", async ({ page }) => {
   const response = await page.goto("/restaurants/e2e-nonexistent-story");
   // Next.js streams notFound() responses with 200 after headers have been sent.

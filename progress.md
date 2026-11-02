@@ -131,11 +131,12 @@ Most recently verified locally:
 
 - Isolated production build — passed with Next.js 16.4.3 and Cache Components
   enabled, via `npm run test:e2e:public` without personal environment files.
-- `npm run test:e2e:public` — 65 tests passed: desktop/mobile public pages,
+- `npm run test:e2e:public` — 67 tests passed: desktop/mobile public pages,
   legacy section redirects and canonical URLs, discovery files, removed demo
   URLs returning not found, empty feeds without sample cards,
   SEO titles/descriptions/canonicals, PNG share-image dimensions, About copy
   and structured data,
+  public-only AdSense verification metadata without advertising network requests,
   login styles, signed-out access, score boundaries, review/place types,
   template validation/content preservation, fixed section order, optional-section
   hiding, gallery enlargement/keyboard dismissal, and editor section/photo state
@@ -274,7 +275,11 @@ why provider totals may differ.
 
 - Provider is **not selected**. Evaluate AdSense initially or another network
   against its current requirements and terms; approval and revenue are not
-  guaranteed. No ad scripts, publisher IDs, or authorized seller records exist.
+  guaranteed. The owner selected AdSense and supplied publisher
+  `ca-pub-8863066373093222`; the public-only verification meta tag is installed.
+  Google Privacy & messaging is the selected CMP, pending account-side message
+  publication, Consent Mode configuration, and the applicable installation
+  instructions. No ad/CMP scripts or authorized seller records are installed.
 - Prerequisites: original reviews, working public contact/privacy/disclosures,
   consent handling, provider approval/setup, and a performance baseline.
 - Connect the disabled `AdSlot` component to consent-aware, labeled, responsive

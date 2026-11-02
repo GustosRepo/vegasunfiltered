@@ -275,6 +275,18 @@ component are available without loading tracking scripts.
 ### Ads, analytics, and SEO measurement roadmap
 
 This is the agreed implementation scope, not a description of active services.
+The owner supplied AdSense publisher `ca-pub-8863066373093222`. Its account
+verification meta tag is installed in the public route layout only, not admin
+or login. A meta tag identifies the account; it does not load ads, collect
+consent, prove site approval, or authorize sellers through `ads.txt`.
+Google Privacy & messaging is the chosen CMP, but its messages and installation
+must still be configured/published in AdSense. The provided `adsbygoogle.js`
+script is intentionally not loaded until that consent integration is ready.
+Enable Consent Mode support and obtain the applicable account-generated consent
+tag/setup instructions. Use Google's documented consent callbacks rather than
+a homemade acceptance flag; test grant, denial, withdrawal, regional opt-outs,
+and blocked/failed CMP before enabling ad requests.
+
 No analytics tag, consent manager, advertising network, or reporting connector
 has been installed. The admin Analytics screen currently checks configuration
 presence only; detecting credentials is not proof of data collection or reports.
