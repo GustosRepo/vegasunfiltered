@@ -1,4 +1,15 @@
-export type Section = "eat" | "drink" | "explore" | "save" | "stories";
+export type Section = "restaurants" | "activities";
+
+export type LegacySection = "eat" | "drink" | "explore" | "save" | "stories";
+
+export function reviewSection(type: "restaurant" | "activity"): Section {
+  return type === "restaurant" ? "restaurants" : "activities";
+}
+
+export function migrateSection(section: Section | LegacySection): Section {
+  return section === "eat" || section === "drink" || section === "restaurants"
+    ? "restaurants" : "activities";
+}
 
 export type Story = {
   slug: string;
@@ -17,6 +28,7 @@ export type Story = {
   publishedAt?: string;
   updatedAt?: string;
   sponsored?: boolean;
+  overallScore?: number | null;
   containsAffiliateLinks?: boolean;
   restaurant?: {
     name: string;
@@ -66,34 +78,16 @@ export const sections: Record<
   Section,
   { title: string; intro: string; image: string }
 > = {
-  eat: {
-    title: "Eat",
+  restaurants: {
+    title: "Restaurants",
     intro:
-      "Good meals don’t need a velvet rope. This is where future neighborhood guides, honest restaurant reporting, and late-night cravings will live.",
+      "Our meals, our stories, our verdicts. Restaurant reviews bring the food, drinks, atmosphere, and actual cost together in one place.",
     image: "/art/diner.svg",
   },
-  drink: {
-    title: "Drink",
+  activities: {
+    title: "Activities",
     intro:
-      "From a long lunch that turns into a late one to the last good bar still pouring, the best nights start with a point of view.",
-    image: "/art/night-market.svg",
-  },
-  explore: {
-    title: "Explore",
-    intro:
-      "The city opens up when you leave the obvious route. Meet the neighborhoods, creative corners, and everyday places that make Las Vegas a place to live.",
-    image: "/art/chinatown.svg",
-  },
-  save: {
-    title: "Save",
-    intro:
-      "A good time should not require a big spend. We’re building practical ideas for making every dollar—and every hour—go further.",
-    image: "/art/desert-road.svg",
-  },
-  stories: {
-    title: "Stories",
-    intro:
-      "Reported with curiosity, told with care. These are the people, places, and small moments behind a city that is more than its postcard.",
+      "Things we do together around Las Vegas: the experience, the price, the story, and whether we would do it again.",
     image: "/art/downtown.svg",
   },
 };
@@ -101,7 +95,7 @@ export const sections: Record<
 export const stories: Story[] = [
   {
     slug: "cheap-eats-las-vegas",
-    section: "eat",
+    section: "restaurants",
     title: "Cheap Eats in Las Vegas",
     dek: "A field guide to the meals worth leaving room—and budget—for.",
     image: "/art/diner.svg",
@@ -127,7 +121,7 @@ export const stories: Story[] = [
   },
   {
     slug: "las-vegas-happy-hours",
-    section: "drink",
+    section: "restaurants",
     title: "Happy Hours Worth the Detour",
     dek: "A future guide to an early drink that feels like the start of the night.",
     image: "/art/night-market.svg",
@@ -147,7 +141,7 @@ export const stories: Story[] = [
   },
   {
     slug: "chinatown-las-vegas",
-    section: "explore",
+    section: "activities",
     title: "A First-Timer’s Chinatown Field Guide",
     dek: "A neighborhood deserves more than a quick stop and a camera roll.",
     image: "/art/chinatown.svg",
@@ -167,7 +161,7 @@ export const stories: Story[] = [
   },
   {
     slug: "las-vegas-on-a-budget",
-    section: "save",
+    section: "activities",
     title: "A More Thoughtful Vegas on a Budget",
     dek: "A good day out is made of choices, not a price tag.",
     image: "/art/desert-road.svg",
@@ -187,7 +181,7 @@ export const stories: Story[] = [
   },
   {
     slug: "friday-night-in-chinatown",
-    section: "stories",
+    section: "activities",
     title: "A Friday Night in Chinatown",
     dek: "A story shaped by the conversations, meals, and unexpected turns of one evening.",
     image: "/art/downtown.svg",

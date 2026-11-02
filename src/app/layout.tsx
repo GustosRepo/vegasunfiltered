@@ -24,7 +24,7 @@ const serifFont = DM_Serif_Display({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Eat like a local. Party like a local. Save like a local.`,
+    default: `${SITE_NAME} — Our time out. Our honest take.`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -51,6 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${headlineFont.variable} ${bodyFont.variable} ${serifFont.variable}`}
     >
       <body>

@@ -5,22 +5,22 @@ import { pageMetadata } from "@/lib/page-metadata";
 export const metadata: Metadata = pageMetadata({
   title: "About | Vegas Unfiltered",
   description:
-    "What Vegas Unfiltered is building: independent stories about food, neighborhoods, and everyday Las Vegas.",
+    "A couple's firsthand restaurant and activity reviews from Las Vegas, with real costs and honest verdicts.",
   path: "/about",
 });
 
 export default async function AboutPage() {
   return (
     <InfoPage
-      eyebrow="A DIFFERENT KIND OF CITY GUIDE"
+      eyebrow="OUR TIME OUT. OUR HONEST TAKE."
       title="About us"
-      intro="Vegas Unfiltered is being built for people who want to meet the city beyond its best-known postcard."
+      intro="We are a couple sharing our experiences at Las Vegas restaurants and activities: the good, the disappointing, and the details that make a night out worth it."
       sections={[
         {
           heading: "The idea",
           paragraphs: [
-            "We want to tell thoughtful stories about food, drink, neighborhoods, culture, and the ordinary details that make a city feel lived in.",
-            "Our point of view is independent and curious—not a tourism brochure, booking service, or promise that every place is a hidden gem.",
+            "Our reviews combine the story of our visit with what we ate, drank, or did, what it cost, and whether we would return. Social content captures the moment; the article gives you the full context.",
+            "An optional score out of 10 is our editorial opinion, not a customer average. Hosted visits and sponsorships are disclosed, and compensation never guarantees praise.",
           ],
         },
         {

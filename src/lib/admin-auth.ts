@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -17,6 +18,7 @@ const roles: CmsRole[] = ["owner", "editor", "contributor"];
 export async function getAdminIdentity(): Promise<{
   client: Awaited<ReturnType<typeof createSupabaseServerClient>>;
   identity: AdminIdentity | null;
+  accessError?: string;
 }> {
   const client = await createSupabaseServerClient();
   if (!client) return { client: null, identity: null };
@@ -26,13 +28,18 @@ export async function getAdminIdentity(): Promise<{
     error,
   } = await client.auth.getUser();
   if (error) {
+    if (isAuthSessionMissingError(error)) return { client, identity: null };
     throw new Error(`Could not verify the current CMS session: ${error.message}`);
   }
   if (!user) return { client, identity: null };
 
   const roleClaim = user.app_metadata.cms_role;
   if (typeof roleClaim !== "string" || !roles.includes(roleClaim as CmsRole)) {
-    return { client, identity: null };
+    return {
+      client,
+      identity: null,
+      accessError: "Your email and password are valid, but this account has no CMS role. Ask the owner to assign access. For the first account, complete the owner setup in README.md.",
+    };
   }
 
   const { data: profile, error: profileError } = await client
@@ -43,7 +50,20 @@ export async function getAdminIdentity(): Promise<{
   if (profileError) {
     throw new Error(`Could not load the CMS profile: ${profileError.message}`);
   }
-  if (!profile || profile.role !== roleClaim) return { client, identity: null };
+  if (!profile) {
+    return {
+      client,
+      identity: null,
+      accessError: "Your account has a CMS role, but its editorial profile is missing. Complete the owner setup in README.md to synchronize the profile.",
+    };
+  }
+  if (profile.role !== roleClaim) {
+    return {
+      client,
+      identity: null,
+      accessError: "Your CMS role and editorial profile do not match. Ask the owner to synchronize your account role, then sign in again.",
+    };
+  }
 
   return {
     client,

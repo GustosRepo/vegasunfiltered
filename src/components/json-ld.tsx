@@ -1,4 +1,5 @@
 import type { Story } from "@/lib/content";
+import type { PublishedCmsArticle } from "@/lib/cms-content";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 function serialize(data: Record<string, unknown>) {
@@ -16,7 +17,7 @@ export function OrganizationJsonLd() {
           name: SITE_NAME,
           url: SITE_URL,
           description:
-            "An independent editorial publication about food, drink, neighborhoods, and culture in Las Vegas.",
+            "Firsthand restaurant and activity reviews from a couple's experiences together in Las Vegas.",
         }),
       }}
       type="application/ld+json"
@@ -166,4 +167,58 @@ export function VideoObjectJsonLd({ story }: { story: Story }) {
       />
     );
   });
+}
+
+export function CmsArticleJsonLd({ article }: { article: PublishedCmsArticle }) {
+  if (!article.authorName) return null;
+  const url = `${SITE_URL}/${article.categorySlug}/${article.slug}`;
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: serialize({
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "@id": `${url}#article`,
+          headline: article.title,
+          description: article.metaDescription || article.subtitle,
+          image: (article.openGraphImage || article.image).startsWith("https://") ? article.openGraphImage || article.image : `${SITE_URL}${article.openGraphImage || article.image}`,
+          mainEntityOfPage: article.canonicalUrl || url,
+          datePublished: article.publishedAt,
+          dateModified: article.updatedAt,
+          author: { "@type": "Person", name: article.authorName },
+          publisher: { "@id": `${SITE_URL}/#organization` },
+          articleSection: article.categoryName,
+          inLanguage: "en-US",
+        }),
+      }}
+      type="application/ld+json"
+    />
+  );
+}
+
+export function CmsRestaurantJsonLd({ article }: { article: PublishedCmsArticle }) {
+  const restaurant = article.restaurant;
+  if (article.reviewType !== "restaurant" || !restaurant?.name || !restaurant.address || !restaurant.city || !restaurant.state) return null;
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: serialize({
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "@id": `${SITE_URL}/${article.categorySlug}/${article.slug}#restaurant`,
+          name: restaurant.name,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: restaurant.address,
+            addressLocality: restaurant.city,
+            addressRegion: restaurant.state,
+            ...(restaurant.postalCode && { postalCode: restaurant.postalCode }),
+          },
+          ...(restaurant.cuisine && { servesCuisine: restaurant.cuisine }),
+          ...(restaurant.website && { url: restaurant.website }),
+        }),
+      }}
+      type="application/ld+json"
+    />
+  );
 }

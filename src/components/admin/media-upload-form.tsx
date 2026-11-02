@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { registerEditorialImage } from "@/app/actions/media";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import type { ReviewMediaOption } from "@/components/admin/review-rich-text";
 
 const maxFileSize = 15 * 1024 * 1024;
 const mimeTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
@@ -13,7 +14,7 @@ function safeFileName(name: string) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-120) || "upload";
 }
 
-export function MediaUploadForm() {
+export function MediaUploadForm({ onUploaded }: { onUploaded?: (image: ReviewMediaOption) => string | void } = {}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
@@ -58,10 +59,15 @@ export function MediaUploadForm() {
         caption,
         photographerCredit,
       });
-      if (!result.ok) throw new Error(result.message);
-      setMessage("Image uploaded.");
+      if (!result.ok || !result.id) throw new Error(result.message);
+      const uploadMessage = onUploaded
+        ? onUploaded({
+          id: result.id, url: client.storage.from("editorial-media").getPublicUrl(storagePath).data.publicUrl,
+          altText, caption, credit: photographerCredit,
+        }) : undefined;
+      setMessage(uploadMessage || "Image uploaded.");
       setFile(null);
-      router.refresh();
+      if (!onUploaded) router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Image upload failed. Retry the upload.");
     } finally {

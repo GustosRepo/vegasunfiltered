@@ -1,20 +1,21 @@
-import { getPublishedStoriesForSection, type Section } from "@/lib/content";
+import { getPublishedStoriesForSection, migrateSection, type Section, type LegacySection } from "@/lib/content";
 import { pageMetadata } from "@/lib/page-metadata";
 import { getPublishedCmsArticles } from "@/lib/cms-content";
 
 export async function sectionMetadata(
-  section: Section,
+  section: Section | LegacySection,
   title: string,
   description: string,
   {
-    index = getPublishedStoriesForSection(section).length > 0,
+    index,
   }: { index?: boolean } = {},
 ) {
-  const cmsStories = await getPublishedCmsArticles(section);
+  const target = migrateSection(section);
+  const cmsStories = await getPublishedCmsArticles(target);
   return pageMetadata({
     title: `${title} | Vegas Unfiltered`,
     description,
-    path: `/${section}`,
-    index: index ?? (getPublishedStoriesForSection(section).length > 0 || cmsStories.length > 0),
+    path: `/${target}`,
+    index: index ?? (getPublishedStoriesForSection(target).length > 0 || cmsStories.length > 0),
   });
 }

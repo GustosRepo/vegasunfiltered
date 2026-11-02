@@ -2,9 +2,11 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { getSupabaseEnvironment } from "@/lib/supabase/env";
 
 export async function createSupabaseServerClient() {
+  await connection();
   const environment = getSupabaseEnvironment();
   if (!environment) return null;
 

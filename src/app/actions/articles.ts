@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { fromZonedTime } from "date-fns-tz";
 import { z } from "zod";
 import { requireCmsRole } from "@/lib/admin-auth";
+import { withReviewTemplate } from "@/lib/review-template";
 import {
   articleDraftSchema,
   isEditorDocument,
@@ -48,31 +49,27 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
   }
 
   const access = await requireCmsRole(["owner", "editor", "contributor"]);
-  const { data, error } = await access.client.rpc("save_article", {
-    p_article_id: parsed.data.id ?? null,
-    p_expected_updated_at: parsed.data.expectedUpdatedAt ?? null,
-    p_title: parsed.data.title,
-    p_subtitle: parsed.data.subtitle,
-    p_slug: parsed.data.slug,
-    p_kind: parsed.data.kind,
-    p_category_id: parsed.data.categoryId || null,
-    p_content: parsed.data.content,
-    p_seo: {
-      seo_title: parsed.data.seoTitle,
-      meta_description: parsed.data.metaDescription,
-      canonical_url: parsed.data.canonicalUrl,
-      primary_keyword: parsed.data.primaryKeyword,
-      secondary_keywords: parsed.data.secondaryKeywords
+  const { data, error } = await access.client.rpc("save_review", {
+    p_review: {
+      ...parsed.data,
+      content: withReviewTemplate(parsed.data.content, parsed.data.reviewTemplate),
+      seo: {
+        seo_title: parsed.data.seoTitle,
+        meta_description: parsed.data.metaDescription,
+        canonical_url: parsed.data.canonicalUrl,
+        primary_keyword: parsed.data.primaryKeyword,
+        secondary_keywords: parsed.data.secondaryKeywords
+          .split(",")
+          .map((keyword) => keyword.trim())
+          .filter(Boolean),
+        internal_linking_notes: parsed.data.internalLinkingNotes,
+        indexing_enabled: parsed.data.indexingEnabled,
+      },
+      tags: parsed.data.tags
         .split(",")
-        .map((keyword) => keyword.trim())
+        .map((tag) => tag.trim())
         .filter(Boolean),
-      internal_linking_notes: parsed.data.internalLinkingNotes,
-      indexing_enabled: parsed.data.indexingEnabled,
     },
-    p_tags: parsed.data.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean),
   });
   if (error) {
     if (error.code === "40001" || error.message.includes("ARTICLE_CONFLICT")) {
@@ -95,7 +92,7 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
   if (!saved || typeof saved.id !== "string" || typeof saved.updated_at !== "string") {
     throw new Error("Article save completed without a valid result.");
   }
-  revalidatePath("/admin/articles");
+  revalidatePath("/admin/reviews");
   updateTag("published-cms");
   revalidatePath("/", "layout");
   revalidatePath("/sitemap.xml");
@@ -142,7 +139,7 @@ export async function transitionArticle(input: unknown): Promise<CmsActionResult
     }
     return { ok: false, message: `Publishing status was not changed: ${error.message}` };
   }
-  revalidatePath("/admin/articles");
+  revalidatePath("/admin/reviews");
   updateTag("published-cms");
   revalidatePath("/", "layout");
   revalidatePath("/sitemap.xml");
@@ -157,7 +154,7 @@ export async function deleteArticle(articleId: string): Promise<CmsActionResult>
   if (error) {
     return { ok: false, message: `Article was not deleted: ${error.message}` };
   }
-  revalidatePath("/admin/articles");
+  revalidatePath("/admin/reviews");
   updateTag("published-cms");
   revalidatePath("/", "layout");
   revalidatePath("/sitemap.xml");
@@ -168,10 +165,10 @@ export async function duplicateArticle(input: string | FormData): Promise<CmsAct
   const articleId = input instanceof FormData ? String(input.get("articleId") ?? "") : input;
   const parsedId = z.string().uuid().safeParse(articleId);
   if (!parsedId.success) return { ok: false, message: "Article ID is invalid." };
-  const { client } = await requireCmsRole(["owner", "editor", "contributor"]);
+  const { client, identity } = await requireCmsRole(["owner", "editor", "contributor"]);
   const { data: article, error: articleError } = await client
     .from("articles")
-    .select("title, subtitle, slug, kind, category_id, content")
+    .select("title, subtitle, slug, kind, review_type, overall_score, category_id, featured_media_id, restaurant_id, neighborhood_id, is_sponsored, content")
     .eq("id", parsedId.data)
     .maybeSingle();
   if (articleError) throw new Error(`Could not load article to duplicate: ${articleError.message}`);
@@ -179,7 +176,7 @@ export async function duplicateArticle(input: string | FormData): Promise<CmsAct
 
   const { data: seo, error: seoError } = await client
     .from("article_seo")
-    .select("seo_title, meta_description, canonical_url, primary_keyword, secondary_keywords, internal_linking_notes")
+    .select("seo_title, meta_description, canonical_url, open_graph_media_id, primary_keyword, secondary_keywords, internal_linking_notes")
     .eq("article_id", parsedId.data)
     .maybeSingle();
   if (seoError) throw new Error(`Could not load article SEO: ${seoError.message}`);
@@ -200,7 +197,14 @@ export async function duplicateArticle(input: string | FormData): Promise<CmsAct
     subtitle: article.subtitle,
     slug: `${article.slug}-copy-${Date.now().toString(36)}`,
     kind: article.kind,
+    reviewType: article.review_type,
+    overallScore: article.overall_score ?? "",
     categoryId: article.category_id ?? "",
+    featuredMediaId: article.featured_media_id ?? "",
+    openGraphMediaId: seo?.open_graph_media_id ?? "",
+    restaurantId: identity.role === "contributor" ? "" : article.restaurant_id ?? "",
+    neighborhoodId: identity.role === "contributor" ? "" : article.neighborhood_id ?? "",
+    isSponsored: identity.role !== "contributor" && article.is_sponsored === true,
     tags: tagNames.join(", "),
     seoTitle: seo?.seo_title ?? "",
     metaDescription: seo?.meta_description ?? "",

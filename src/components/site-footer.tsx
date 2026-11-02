@@ -16,7 +16,7 @@ export function SiteFooter() {
           <span className="wordmark-main">VEGAS</span>
           <span className="wordmark-sub">UNFILTERED</span>
         </Link>
-        <p>Eat like a local. Party like a local. Save like a local.</p>
+        <p>Our time out. Our honest take. Restaurant and activity reviews from Las Vegas.</p>
         <nav aria-label="Footer navigation">
           {links.map((link) => (
             <Link href={link.href} key={link.href}>

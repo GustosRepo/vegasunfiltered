@@ -23,7 +23,6 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          <Link href="/about">About us</Link>
         </nav>
       </details>
     </header>

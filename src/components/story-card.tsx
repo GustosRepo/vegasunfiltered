@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Story } from "@/lib/content";
 import { EditorialArt } from "@/components/editorial-art";
+import { ReviewScore } from "@/components/review-score";
 
 type StoryCardProps = {
   story: Story;
@@ -16,8 +17,9 @@ export function StoryCard({ story, size = "standard" }: StoryCardProps) {
           <span className="eyebrow">{story.label}</span>
           <h2>{story.title}</h2>
           <p>{story.dek}</p>
+          <ReviewScore score={story.overallScore} />
           <span className="story-read">
-            {story.status === "draft" ? "DEMO DRAFT" : "READ THE STORY"}
+            {story.status === "draft" ? "DEMO DRAFT" : "READ THE REVIEW"}
             <span aria-hidden="true">↗</span>
           </span>
         </div>

@@ -1,0 +1,65 @@
+import { test, expect } from "@playwright/test";
+
+test("structured review uses a fixed section order, preserves scores and expands gallery photos", async ({ page }) => {
+  await page.goto("/e2e-review-fixture");
+  await expect(page.getByRole("heading", { name: "Test-only review." })).toBeVisible();
+  await expect(page.getByLabel("Our editorial score: 0 out of 10")).toBeVisible();
+  await expect(page.getByText("This article is sponsored.", { exact: false })).toBeVisible();
+  const headings = await page.locator("main h2").allTextContents();
+  expect(headings).toEqual(["Quick verdict", "At a glance", "Our experience", "What we tried", "Worth knowing", "Would we go back?", "Photo gallery"]);
+  await expect(page.getByText("November 2, 2026", { exact: true })).toBeVisible();
+  await expect(page.getByText("$80 per person")).toBeVisible();
+  await expect(page.getByText("Our original experience and photos stay together.")).toBeVisible();
+  const opener = page.getByRole("button", { name: "Enlarge photo 1: Our dinner", exact: true });
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Enlarged review photo" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "Our dinner" })).toBeVisible();
+  await expect(dialog).toContainText("The first course");
+  await expect(dialog).toContainText("Photo: Vegas Unfiltered");
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(opener).toBeFocused();
+  await page.getByRole("button", { name: "Enlarge photo 2: The dining room" }).click();
+  await expect(dialog.getByRole("img", { name: "The dining room" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close photo" }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("empty optional review sections do not render", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/empty");
+  await expect(page.getByRole("heading", { name: "Empty review." })).toBeVisible();
+  await expect(page.locator("main h2")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Enlarge photo/ })).toHaveCount(0);
+});
+
+test("guided editor keeps sections and photo choices when switching tabs", async ({ page }) => {
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (request.headers()["next-action"]) writes.push(request.url());
+  });
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByLabel("Quick verdict", { exact: true }).fill("Our short verdict.");
+  await page.getByLabel("Visit date (public, optional)").fill("2026-11-02");
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("Our evening together.");
+  await page.getByRole("textbox", { name: "What we tried", exact: true }).fill("The tasting menu.");
+  await page.getByRole("tab", { name: "Photos", exact: true }).click();
+  await page.getByRole("button", { name: "Add: Our dinner", exact: true }).click();
+  await page.getByRole("button", { name: "Add: The dining room", exact: true }).click();
+  await page.getByRole("button", { name: "Move photo 2 earlier", exact: true }).click();
+  await page.getByLabel("Photo 1 caption").fill("Our quiet table.");
+  await page.getByRole("button", { name: "Use as cover", exact: true }).first().click();
+  await expect(page.locator(".cms-review-cover")).toHaveAttribute("alt", "The dining room");
+  await page.getByRole("tab", { name: "Content", exact: true }).click();
+  await expect(page.getByLabel("Quick verdict", { exact: true })).toHaveValue("Our short verdict.");
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("Our evening together.");
+  await expect(page.getByRole("textbox", { name: "What we tried", exact: true })).toContainText("The tasting menu.");
+  await expect(page.getByRole("combobox", { name: "Featured image", exact: true })).toHaveValue("123e4567-e89b-42d3-a456-426614174001");
+  await page.getByRole("tab", { name: "Photos", exact: true }).click();
+  await expect(page.getByLabel("Photo 1 caption")).toHaveValue("Our quiet table.");
+  await page.getByRole("button", { name: "Remove photo 1 from gallery", exact: true }).click();
+  await expect(page.getByLabel("Photo 1 alt text")).toHaveValue("Our dinner");
+  await expect(page.getByRole("button", { name: "Add: The dining room", exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
+});

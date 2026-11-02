@@ -1,24 +1,27 @@
 import Link from "next/link";
-import type { Section } from "@/lib/content";
+import { permanentRedirect } from "next/navigation";
+import { migrateSection, type Section, type LegacySection } from "@/lib/content";
 import {
   getPublishedStoriesForSection,
   getStoriesForSection,
   sections,
 } from "@/lib/content";
 import { EditorialArt } from "@/components/editorial-art";
-import { StoryCard } from "@/components/story-card";
 import { getPublishedCmsArticles, toStorySummary } from "@/lib/cms-content";
+import { ReviewGrid } from "@/components/review-grid";
 
-export async function CategoryPage({ section }: { section: Section }) {
-  const details = sections[section];
-  const cmsArticles = await getPublishedCmsArticles(section);
+export async function CategoryPage({ section }: { section: Section | LegacySection }) {
+  const target = migrateSection(section);
+  if (target !== section) permanentRedirect(`/${target}`);
+  const details = sections[target];
+  const cmsArticles = await getPublishedCmsArticles(target);
   const publishedStories = [
-    ...getPublishedStoriesForSection(section),
+    ...getPublishedStoriesForSection(target),
     ...cmsArticles.map(toStorySummary),
   ];
   const sectionStories = publishedStories.length
     ? publishedStories
-    : getStoriesForSection(section);
+    : getStoriesForSection(target);
 
   return (
     <main>
@@ -37,9 +40,7 @@ export async function CategoryPage({ section }: { section: Section }) {
           className="category-hero-art"
           src={details.image}
         />
-        <div className="category-story-grid">
-          {sectionStories.map((story) => <StoryCard key={story.slug} story={story} />)}
-        </div>
+        <ReviewGrid reviews={sectionStories} />
       </section>
     </main>
   );

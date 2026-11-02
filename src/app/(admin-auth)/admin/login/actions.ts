@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAdminIdentity } from "@/lib/admin-auth";
 
 const credentialsSchema = z.object({
   email: z.string().email().max(254).trim(),
@@ -34,6 +35,13 @@ export async function signIn(
   const { error } = await client.auth.signInWithPassword(parsed.data);
   if (error) {
     return { error: "Sign-in failed. Check your credentials or ask the owner for access." };
+  }
+
+  const { identity, accessError } = await getAdminIdentity();
+  if (!identity) {
+    return {
+      error: accessError ?? "Sign-in succeeded, but your session could not be verified. Ensure cookies are enabled and try again.",
+    };
   }
 
   redirect("/admin");

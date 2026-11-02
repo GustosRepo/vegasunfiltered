@@ -73,6 +73,18 @@ function isSafeUrl(value: unknown, allowEmbed = false): value is string {
   }
 }
 
+function isSafeImageUrl(value: unknown): value is string {
+  if (isSafeUrl(value)) return true;
+  if (typeof value !== "string" || value.length > 2048) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+      && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 export function getYoutubeEmbedUrl(value: string) {
   let url: URL;
   try {
@@ -98,10 +110,13 @@ function validateNode(value: unknown, depth: number, budget: { count: number }):
   if (typeof value.type !== "string" || !allowedNodes.has(value.type)) return false;
   if (value.text !== undefined && (typeof value.text !== "string" || value.text.length > 100000)) return false;
   if (value.attrs !== undefined) {
-    if (!isRecord(value.attrs) || Object.keys(value.attrs).some((key) => !allowedAttributes.has(key))) return false;
+    if (!isRecord(value.attrs) || Object.keys(value.attrs).some((key) =>
+      !allowedAttributes.has(key) && !(key === "reviewTemplate" && depth === 0 && value.type === "doc")
+    )) return false;
+    if (value.attrs.reviewTemplate !== undefined && !reviewTemplateSchema.safeParse(value.attrs.reviewTemplate).success) return false;
   }
   if (value.type === "heading" && ![2, 3, 4].includes(Number((value.attrs as JsonRecord | undefined)?.level))) return false;
-  if (value.type === "image" && !isSafeUrl((value.attrs as JsonRecord | undefined)?.src)) return false;
+  if (value.type === "image" && !isSafeImageUrl((value.attrs as JsonRecord | undefined)?.src)) return false;
   if (value.type === "youtube" && !isSafeUrl((value.attrs as JsonRecord | undefined)?.src, true)) return false;
   if (value.type === "text" && typeof value.text !== "string") return false;
   if (value.content !== undefined) {
@@ -131,6 +146,35 @@ export function isEditorDocument(value: unknown): value is EditorNode {
   return validateNode(value, 0, budget);
 }
 
+const reviewSectionDocument = z.custom<EditorNode>((value) =>
+  isRecord(value) && (!isRecord(value.attrs) || value.attrs.reviewTemplate === undefined) && isEditorDocument(value),
+"Review section contains unsupported content.");
+
+export const reviewPhotoSchema = z.object({
+  mediaId: z.string().uuid(),
+  url: z.string().refine(isSafeImageUrl, "Photo URL must use HTTPS, a local path, or a loopback development server."),
+  altText: z.string().trim().min(1).max(500),
+  caption: z.string().max(2000),
+  credit: z.string().max(200),
+});
+
+export const reviewTemplateSchema = z.object({
+  version: z.literal(1),
+  quickVerdict: z.string().max(1500),
+  visitedAt: z.union([z.literal(""), z.string().date()]),
+  priceRange: z.string().max(120),
+  bestFor: z.string().max(240),
+  tried: reviewSectionDocument,
+  worthKnowing: reviewSectionDocument,
+  returnVerdict: reviewSectionDocument,
+  gallery: z.array(reviewPhotoSchema).max(50).refine(
+    (photos) => new Set(photos.map((photo) => photo.mediaId)).size === photos.length,
+    "Each photo can appear only once in the review gallery.",
+  ),
+});
+export type ReviewTemplate = z.infer<typeof reviewTemplateSchema>;
+export type ReviewPhoto = z.infer<typeof reviewPhotoSchema>;
+
 export const articleDraftSchema = z.object({
   id: z.string().uuid().optional(),
   expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
@@ -144,7 +188,17 @@ export const articleDraftSchema = z.object({
     "neighborhood_guide",
     "experience_review",
   ]),
+  reviewType: z.enum(["restaurant", "activity"]),
+  overallScore: z.union([
+    z.literal(""),
+    z.number().min(0).max(10).multipleOf(0.1),
+  ]),
   categoryId: z.union([z.string().uuid(), z.literal("")]),
+  featuredMediaId: z.union([z.string().uuid(), z.literal("")]),
+  openGraphMediaId: z.union([z.string().uuid(), z.literal("")]),
+  restaurantId: z.union([z.string().uuid(), z.literal("")]),
+  neighborhoodId: z.union([z.string().uuid(), z.literal("")]),
+  isSponsored: z.boolean(),
   tags: z.string().max(500),
   seoTitle: z.string().trim().max(70),
   metaDescription: z.string().trim().max(180),
@@ -154,15 +208,19 @@ export const articleDraftSchema = z.object({
   internalLinkingNotes: z.string().max(5000),
   indexingEnabled: z.boolean(),
   content: z.custom<EditorNode>(isEditorDocument, "Article content is invalid."),
+  reviewTemplate: reviewTemplateSchema.optional(),
 });
 
 export const restaurantSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().trim().min(2).max(160),
+  placeType: z.enum(["restaurant", "activity"]),
   slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().max(5000),
   cuisine: z.string().max(120),
   neighborhoodId: z.union([z.string().uuid(), z.literal("")]),
+  featuredMediaId: z.union([z.string().uuid(), z.literal("")]),
+  galleryMediaIds: z.array(z.string().uuid()).max(50),
   address: z.string().max(250),
   city: z.string().trim().min(2).max(100),
   state: z.string().trim().min(2).max(50),
@@ -172,6 +230,8 @@ export const restaurantSchema = z.object({
   priceRange: z.enum(["", "$", "$$", "$$$", "$$$$"]),
   parkingInformation: z.string().max(2000),
   reservationInformation: z.string().max(2000),
+  operatingHours: z.string().max(5000),
+  visitStatus: z.enum(["planned", "visited", "reviewed"]),
   internalNotes: z.string().max(5000),
 });
 
@@ -186,6 +246,8 @@ export const restaurantVisitSchema = z.object({
   salesTax: z.coerce.number().min(0).max(100000),
   tip: z.coerce.number().min(0).max(100000),
   manualTotalOverride: z.union([z.literal(""), z.coerce.number().min(0).max(100000)]),
+  itemsOrdered: z.string().max(10000),
+  publicDetailsEnabled: z.boolean(),
   experienceNotes: z.string().max(10000),
   wouldReturn: z.enum(["", "yes", "no"]),
   editorialVerdict: z.string().max(2000),

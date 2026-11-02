@@ -1,12 +1,10 @@
 export const SITE_NAME = "Vegas Unfiltered";
 export const SITE_URL = "https://vegasunfiltered.com";
 export const SITE_DESCRIPTION =
-  "Real food. Real people. Real prices. A more thoughtful look at the Las Vegas beyond the casino floors.";
+  "Firsthand Las Vegas restaurant and activity reviews. Our experiences, actual costs, and honest verdicts from time out together.";
 
 export const navigation = [
-  { label: "Eat", href: "/eat" },
-  { label: "Drink", href: "/drink" },
-  { label: "Explore", href: "/explore" },
-  { label: "Save", href: "/save" },
-  { label: "Stories", href: "/stories" },
+  { label: "Restaurants", href: "/restaurants" },
+  { label: "Activities", href: "/activities" },
+  { label: "About Us", href: "/about" },
 ] as const;

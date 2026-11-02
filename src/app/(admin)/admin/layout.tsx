@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Activity,
+  BadgeDollarSign,
   BookOpenText,
   Building2,
   Camera,
-  ChevronDown,
   CircleHelp,
   FileText,
   LayoutDashboard,
+  LogOut,
   MapPin,
   Search,
   Settings,
@@ -23,6 +23,9 @@ import { getAdminIdentity } from "@/lib/admin-auth";
 import { signOut } from "@/app/actions/auth";
 import "./admin.css";
 
+// Session verification must finish before the protected workspace can render.
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Editorial Desk",
   robots: { index: false, follow: false },
@@ -30,34 +33,20 @@ export const metadata: Metadata = {
 
 const navigation = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Articles", href: "/admin/articles", icon: FileText },
-  { label: "Restaurants", href: "/admin/restaurants", icon: Building2 },
-  { label: "Restaurant visits", href: "/admin/visits", icon: Wine },
+  { label: "Reviews", href: "/admin/reviews", icon: FileText },
+  { label: "Places", href: "/admin/places", icon: Building2 },
+  { label: "Visits", href: "/admin/visits", icon: Wine },
   { label: "Media library", href: "/admin/media", icon: Camera },
   { label: "Neighborhoods", href: "/admin/neighborhoods", icon: MapPin },
   { label: "SEO audit", href: "/admin/seo", icon: Search },
   { label: "Analytics", href: "/admin/analytics", icon: Activity },
+  { label: "Affiliate links", href: "/admin/affiliates", icon: BadgeDollarSign },
   { label: "Team", href: "/admin/team", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <Suspense fallback={null}><DynamicMarker /></Suspense>
-      <Suspense fallback={<div className="cms-loading">Opening the editorial desk…</div>}>
-        <AuthenticatedAdminLayout>{children}</AuthenticatedAdminLayout>
-      </Suspense>
-    </>
-  );
-}
-
-async function DynamicMarker() {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
   await connection();
-  return null;
-}
-
-async function AuthenticatedAdminLayout({ children }: { children: ReactNode }) {
   const { client, identity } = await getAdminIdentity();
   if (!client) {
     return (
@@ -86,7 +75,7 @@ async function AuthenticatedAdminLayout({ children }: { children: ReactNode }) {
           <span className="cms-logo-mark">VU</span>
           <span>VEGAS <b>UNFILTERED</b><small>EDITORIAL DESK</small></span>
         </Link>
-        <div className="cms-workspace"><span className="cms-workspace-dot" /> Vegas Unfiltered <ChevronDown size={14} /></div>
+        <div className="cms-workspace"><span className="cms-workspace-dot" /> Vegas Unfiltered</div>
         <nav aria-label="CMS navigation" className="cms-navigation">
           <span className="cms-nav-label">WORKSPACE</span>
           {navigation.map(({ href, label, icon: Icon }) => (
@@ -103,8 +92,9 @@ async function AuthenticatedAdminLayout({ children }: { children: ReactNode }) {
           </span>
           <span className="cms-user-info"><b>{identity.displayName}</b><small>{identity.role}</small></span>
           <form action={signOut}>
-            <button aria-label="Sign out" className="cms-icon-button" title="Sign out" type="submit">
-              <ChevronDown aria-hidden="true" size={16} />
+            <button className="cms-sign-out" type="submit">
+              <LogOut aria-hidden="true" size={16} />
+              Sign out
             </button>
           </form>
         </div>

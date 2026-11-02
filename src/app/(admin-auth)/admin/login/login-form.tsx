@@ -4,10 +4,10 @@ import { useActionState } from "react";
 import { LoaderCircle, LockKeyhole } from "lucide-react";
 import { signIn, type LoginState } from "./actions";
 
-export function LoginForm() {
+export function LoginForm({ initialError }: { initialError?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(
     signIn,
-    undefined,
+    initialError ? { error: initialError } : undefined,
   );
 
   return (

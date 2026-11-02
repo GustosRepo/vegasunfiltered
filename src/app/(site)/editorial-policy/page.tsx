@@ -30,6 +30,13 @@ export default async function EditorialPolicyPage() {
           ],
         },
         {
+          heading: "Our score, not a customer average",
+          paragraphs: [
+            "An overall score out of 10 is our editorial judgment of our own visit, supported by the review's context, cost, highlights, and drawbacks. It is not an average of public ratings or a guarantee that every visit will be the same.",
+            "We leave reviews unscored when we do not yet have a considered verdict. Hosted meals, complimentary tickets, and sponsored work must be disclosed; they never guarantee a positive score.",
+          ],
+        },
+        {
           heading: "Independence and corrections",
           paragraphs: [
             "Payment or a potential partnership will not buy a favorable review. Sponsored work will be clearly labeled and kept distinct from independent editorial coverage.",
