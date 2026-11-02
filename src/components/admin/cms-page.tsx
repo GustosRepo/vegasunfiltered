@@ -13,7 +13,6 @@ import { MediaUploadForm } from "@/components/admin/media-upload-form";
 import { MediaLibrary } from "@/components/admin/media-library";
 import { ReceiptUploadForm } from "@/components/admin/receipt-upload-form";
 import { RestaurantDirectory } from "@/components/admin/restaurant-directory";
-import { stories } from "@/lib/content";
 import { saveAffiliateLink, setAffiliateLinkActive } from "@/app/actions/affiliate-links";
 import { reviewSection } from "@/lib/content";
 import { reviewPlainText } from "@/lib/review-template";
@@ -251,7 +250,6 @@ async function SeoAudit() {
   }));
   const knownCmsPaths = new Set<string>([
     ...articlePaths.values(),
-    ...stories.filter((story) => story.status === "published").map((story) => `/${story.section}/${story.slug}`),
   ]);
   const outboundLinks = new Map<string, string[]>();
   function collectLinks(value: unknown, found: string[] = []): string[] {

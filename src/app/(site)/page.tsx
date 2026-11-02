@@ -1,20 +1,18 @@
 import Link from "next/link";
 import { EditorialArt } from "@/components/editorial-art";
 import { StoryCard } from "@/components/story-card";
-import { stories } from "@/lib/content";
 import { pageMetadata } from "@/lib/page-metadata";
 import { SITE_DESCRIPTION } from "@/lib/site";
 import { getPublishedCmsArticles, toStorySummary } from "@/lib/cms-content";
 
 export const metadata = pageMetadata({
-  title: "Vegas Unfiltered — Our time out. Our honest take.",
+  title: "Honest Las Vegas Restaurant & Activity Reviews | Vegas Unfiltered",
   description: SITE_DESCRIPTION,
   path: "",
 });
 
 export default async function Home() {
   const published = (await getPublishedCmsArticles()).map(toStorySummary);
-  const latest = published.length ? published : stories;
   return (
     <main>
       <section className="home-hero" aria-labelledby="hero-title">
@@ -37,8 +35,8 @@ export default async function Home() {
           <div><span className="eyebrow">THE STORY BEHIND THE SCORE</span><h2 id="latest-heading">Our latest<br /><em>reviews.</em></h2></div>
           <p>What we loved, what we didn&apos;t, and what you should know before going.</p>
         </div>
-        <div className="category-story-grid">{latest.slice(0, 4).map((review) => <StoryCard key={review.slug} story={review} />)}</div>
-        {!published.length && <p className="homepage-draft-note">These are preserved demonstration concepts, not firsthand reviews. Real visits and honest scores come before publication.</p>}
+        <div className="category-story-grid">{published.slice(0, 4).map((review) => <StoryCard key={review.slug} story={review} />)}</div>
+        {!published.length && <p className="review-empty-state">Our first reviews are on the way. Check back for firsthand experiences, real costs, and honest verdicts.</p>}
       </section>
       <section className="eat-section section-pad">
         <div className="eat-intro page-shell">

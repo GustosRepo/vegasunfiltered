@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_SHARE_IMAGE, SITE_URL } from "@/lib/site";
 
 export function pageMetadata({
   title,
@@ -25,18 +25,13 @@ export function pageMetadata({
       description,
       url,
       locale: "en_US",
-      images: [
-        {
-          url: `${SITE_URL}/art/las-vegas-night.svg`,
-          alt: "Illustrated Las Vegas dusk, development artwork",
-        },
-      ],
+      images: [SITE_SHARE_IMAGE],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [`${SITE_URL}/art/las-vegas-night.svg`],
+      images: [SITE_SHARE_IMAGE],
     },
   };
 }

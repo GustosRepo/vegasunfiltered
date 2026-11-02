@@ -7,6 +7,7 @@ import { StoryCard } from "@/components/story-card";
 export function ReviewGrid({ reviews }: { reviews: Story[] }) {
   const [sort, setSort] = useState("latest");
   const [search, setSearch] = useState("");
+  if (!reviews.length) return <p className="review-empty-state">No reviews published yet. Our firsthand reviews will appear here once they are ready.</p>;
   const visible = reviews.filter((review) =>
     `${review.title} ${review.dek} ${review.tags.join(" ")}`.toLowerCase().includes(search.trim().toLowerCase()),
   ).toSorted((a, b) => sort === "score"

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { articleDraftSchema, isEditorDocument, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
-import { migrateSection, reviewSection, stories } from "../../src/lib/content";
+import { migrateSection, reviewSection } from "../../src/lib/content";
 import { blankReviewDocument, blankReviewTemplate, hasReviewContent, readReviewTemplate, reviewPlainText, withReviewTemplate } from "../../src/lib/review-template";
 
 test("editorial scores are optional, accept boundaries, and reject invalid precision", () => {
@@ -24,17 +24,11 @@ test("review and place types have the same two choices", () => {
   }
 });
 
-test("legacy demo content is preserved without invented scores", () => {
+test("legacy sections retain their review destinations", () => {
   expect(reviewSection("restaurant")).toBe("restaurants");
   expect(reviewSection("activity")).toBe("activities");
   for (const value of ["eat", "drink"] as const) expect(migrateSection(value)).toBe("restaurants");
   for (const value of ["explore", "save", "stories"] as const) expect(migrateSection(value)).toBe("activities");
-  expect(stories).toHaveLength(5);
-  for (const story of stories) {
-    expect(["restaurants", "activities"]).toContain(story.section);
-    expect(story.status).toBe("draft");
-    expect(story.overallScore).toBeUndefined();
-  }
 });
 
 test("review template preserves legacy body and round-trips optional sections", () => {

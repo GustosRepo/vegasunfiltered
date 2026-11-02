@@ -93,9 +93,10 @@ verified firsthand reporting. The application requires this migration before
 configured Supabase reads or review saves can work. No script applies it to
 your hosted project automatically.
 
-The public site retains its typed demonstration stories in
-[`src/lib/content.ts`](./src/lib/content.ts). Production CMS stories are stored
-in Supabase and are loaded only when their status is `published` and their
+All public reviews come from the CMS. Hardcoded demonstration articles and
+fallback cards have been removed; empty feeds show an honest no-reviews state.
+Former demo URLs return not found unless a real published CMS review uses that
+slug. Production reviews are stored in Supabase and loaded only when their status is `published` and their
 publication time has arrived. Drafts remain private to authenticated editors;
 published stories marked noindex can render but are excluded from category
 feeds and the sitemap.
@@ -206,20 +207,15 @@ The SEO audit checks configured article titles, descriptions, canonicals, and
 indexing flags; it is not an external crawler. Analytics cards are connection
 status only, not reports. No analytics connector or tracking script is enabled.
 
-For a restaurant receipt, add the optional `receipt` object to the story. Only
-verified fields should be provided; absent values are not rendered. Do not
-publish demonstration text as firsthand reporting.
+To create the first real review, open **Admin → Reviews → New review**, enter
+your own visit details, upload owned/licensed photos in **Photos**, save, and
+check **Private preview**. Use **Publishing** to submit, approve, and publish
+when ready. Drafts never appear in public feeds.
 
-Optional article fields include `seoTitle`, `metaDescription`, `imageCaption`,
-`author`, `publishedAt`, `updatedAt`, restaurant details, neighborhood context,
-related story slugs, sponsored/affiliate flags, and video embeds. Video embeds
-are restricted to YouTube's privacy-enhanced host or Vimeo's player host.
-VideoObject data requires an original-video record with a verified thumbnail
-and upload date; Restaurant JSON-LD requires a published story and verified
-address details. The template creates a contents list for longer articles.
-
-The initial stories are concepts only. Do not treat their titles, illustrations,
-or copy as reports about real visits or business recommendations.
+Record private costs and receipts in **Visits** and link them to the review.
+Only explicitly shared visit details or redacted public receipts are rendered.
+SEO, social image selection, place context, sponsorship labels, and affiliate
+links are managed in the CMS rather than hardcoded article objects.
 
 ## Project structure
 
@@ -227,11 +223,25 @@ or copy as reports about real visits or business recommendations.
   robots, and site icon.
 - `src/components/` — shared header/footer, story cards, article/category
   templates, image placeholders, and structured data.
-- `src/lib/content.ts` — validated editorial data and section configuration.
+- `src/lib/content.ts` — review summary types, section configuration, and legacy route mapping.
 - `src/lib/site.ts` — site name, canonical origin, description, and navigation.
 - `public/art/` — original vector development artwork, not documentary photos.
 
 ## SEO and content safeguards
+
+The About page reflects the owner's dad-and-husband perspective and focus on
+honest reviews and value, without invented names, residency, credentials, or
+social profiles. It includes AboutPage/breadcrumb structured data and links to
+review sections and disclosure policies. Add personal names and verified social
+profiles only when the owner chooses to make them public.
+
+Page titles/descriptions identify Las Vegas restaurant and activity coverage.
+Canonical URLs use the production domain. The default social image is generated
+as a 1200×630 PNG at `/opengraph-image`, not SVG development artwork. CMS review
+social images override the brand fallback when configured. Empty review sections
+remain noindex and out of the sitemap until indexable reviews are published.
+These are technical foundations, not a ranking guarantee; Search Console setup
+and live URL inspection still require deployment and domain ownership.
 
 - Canonicals and Open Graph/Twitter metadata are set per route, with the
   canonical origin fixed to `https://vegasunfiltered.com`.
@@ -272,7 +282,7 @@ component are available without loading tracking scripts.
 
 ## Before public launch
 
-- Replace all concept copy with complete, fact-checked reporting; add named
+- Publish complete, fact-checked reviews through the CMS; add named
   authors, accurate publication dates, relevant internal links, and image
   captions where applicable.
 - Replace development illustrations with owned or licensed editorial imagery

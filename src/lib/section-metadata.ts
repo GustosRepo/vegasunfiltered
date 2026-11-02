@@ -1,4 +1,4 @@
-import { getPublishedStoriesForSection, migrateSection, type Section, type LegacySection } from "@/lib/content";
+import { migrateSection, type Section, type LegacySection } from "@/lib/content";
 import { pageMetadata } from "@/lib/page-metadata";
 import { getPublishedCmsArticles } from "@/lib/cms-content";
 
@@ -16,6 +16,6 @@ export async function sectionMetadata(
     title: `${title} | Vegas Unfiltered`,
     description,
     path: `/${target}`,
-    index: index ?? (getPublishedStoriesForSection(target).length > 0 || cmsStories.length > 0),
+    index: index ?? cmsStories.length > 0,
   });
 }

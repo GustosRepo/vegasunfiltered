@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 export type InfoSection = { heading: string; paragraphs: string[] };
 
@@ -7,11 +8,13 @@ export function InfoPage({
   title,
   intro,
   sections,
+  children,
 }: {
   eyebrow: string;
   title: string;
   intro: string;
   sections: InfoSection[];
+  children?: ReactNode;
 }) {
   return (
     <main className="info-page page-shell">
@@ -27,6 +30,7 @@ export function InfoPage({
           </section>
         ))}
       </div>
+      {children}
     </main>
   );
 }

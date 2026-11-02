@@ -4,10 +4,25 @@ Last updated: 2026-11-02
 
 ## Project snapshot
 
+SEO/About update: owner-approved first-person About copy now emphasizes being a
+dad and husband, frustration with expensive Strip-focused coverage, and honest
+value-conscious reviews. No names or social profiles were supplied or invented.
+Added AboutPage/breadcrumb structured data, search-focused page titles and
+descriptions, a generated 1200×630 PNG social preview, and a brand-image fallback
+for CMS reviews without photos. Live Search Console/domain checks are not part
+of local validation.
+
 Vegas Unfiltered is a firsthand restaurant and activity review site built with
 Next.js 16.4.3, React 19, TypeScript, and Tailwind CSS 4. One review brings
 together the experience, food/drinks or activity, cost, personal story, and
 verdict. The public navigation is Restaurants, Activities, and About Us.
+
+Hardcoded demo articles, fallback review cards, and demo category illustrations
+have been removed. Public review routes, feeds, metadata, sitemap, and SEO audit
+now use CMS records only. Empty feeds show a no-reviews state; former demo
+article URLs are not found unless a real published review uses that slug.
+No hosted CMS records were deleted. The general homepage illustration remains
+site artwork rather than a claimed photo of a reviewed place.
 
 The application passes the production build, lint, and TypeScript checks.
 Production HTTP smoke tests passed for the homepage, admin article and affiliate
@@ -52,7 +67,7 @@ workflow has not independently inspected the hosted database.
   to place details, visit creation, existing visits/receipts, and previews;
   starting from a place or review preselects the related records.
 - Backend table names stay unchanged to avoid disrupting existing media,
-  receipts, roles, and references. Existing guide/demo content stays labeled.
+  receipts, roles, and references. Existing CMS records are preserved.
 - Apply only the new migration once to an already-migrated project; do not
   rerun the original table-creation migrations. Review classifications after
   migration, especially former Save/Stories content. See README for details.
@@ -68,8 +83,8 @@ workflow has not independently inspected the hosted database.
   pages, and review routes; old category URLs redirect.
 - Responsive public header/footer, shared article/category components, metadata,
   structured data, robots, sitemap, and site icon.
-- Demo stories are stored locally in `src/lib/content.ts`. CMS stories can be
-  loaded from Supabase when published and their publication time has arrived.
+- Reviews are loaded only from Supabase when published and their publication
+  time has arrived. There is no local demonstration-article fallback.
 - Published CMS article content is rendered as validated React nodes rather
   than injected HTML. CMS-backed pages are split into explicit section routes.
 - Public and admin route groups have separate layouts, so admin pages do not
@@ -116,8 +131,11 @@ Most recently verified locally:
 
 - Isolated production build — passed with Next.js 16.4.3 and Cache Components
   enabled, via `npm run test:e2e:public` without personal environment files.
-- `npm run test:e2e:public` — 59 tests passed: desktop/mobile public pages,
-  legacy redirects and canonical URLs, discovery files, demo safeguards,
+- `npm run test:e2e:public` — 65 tests passed: desktop/mobile public pages,
+  legacy section redirects and canonical URLs, discovery files, removed demo
+  URLs returning not found, empty feeds without sample cards,
+  SEO titles/descriptions/canonicals, PNG share-image dimensions, About copy
+  and structured data,
   login styles, signed-out access, score boundaries, review/place types,
   template validation/content preservation, fixed section order, optional-section
   hiding, gallery enlargement/keyboard dismissal, and editor section/photo state
@@ -147,9 +165,9 @@ validation.
 2. **No production deployment verification.** Vercel environment variables,
    Supabase Auth redirect URLs, domain/DNS, and deployed URLs still need
    configuration and testing.
-3. **Content is not publication-ready.** Initial stories are concepts/demo
-   content, not firsthand reporting. Replace with fact-checked reporting,
-   named authors, accurate dates, and owned/licensed imagery before launch.
+3. **First real reviews need publishing.** Demo articles have been removed.
+   Add firsthand reporting, named authors, accurate dates, and owned/licensed
+   imagery through the CMS before launch.
 4. **Operations need real integrations.** Scheduled publishing needs configured
    secrets and a monitored Vercel Cron run. Newsletter, analytics reporting,
    and affiliate tracking are not connected.

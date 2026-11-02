@@ -1,6 +1,6 @@
 import type { Story } from "@/lib/content";
 import type { PublishedCmsArticle } from "@/lib/cms-content";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_SHARE_IMAGE, SITE_URL } from "@/lib/site";
 
 function serialize(data: Record<string, unknown>) {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -16,13 +16,33 @@ export function OrganizationJsonLd() {
           "@id": `${SITE_URL}/#organization`,
           name: SITE_NAME,
           url: SITE_URL,
-          description:
-            "Firsthand restaurant and activity reviews from a couple's experiences together in Las Vegas.",
+          description: SITE_DESCRIPTION,
         }),
       }}
       type="application/ld+json"
     />
   );
+}
+
+export function AboutJsonLd() {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serialize({
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "@id": `${SITE_URL}/about#webpage`,
+    url: `${SITE_URL}/about`,
+    name: "About Vegas Unfiltered",
+    description: "A dad and husband's firsthand Las Vegas restaurant and activity reviews, with real costs and honest opinions.",
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    about: { "@id": `${SITE_URL}/#organization` },
+    inLanguage: "en-US",
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "About me", item: `${SITE_URL}/about` },
+      ],
+    },
+  }) }} />;
 }
 
 export function WebsiteJsonLd() {
@@ -181,7 +201,7 @@ export function CmsArticleJsonLd({ article }: { article: PublishedCmsArticle }) 
           "@id": `${url}#article`,
           headline: article.title,
           description: article.metaDescription || article.subtitle,
-          image: (article.openGraphImage || article.image).startsWith("https://") ? article.openGraphImage || article.image : `${SITE_URL}${article.openGraphImage || article.image}`,
+          image: new URL(article.openGraphImage || article.image || SITE_SHARE_IMAGE.url, SITE_URL).href,
           mainEntityOfPage: article.canonicalUrl || url,
           datePublished: article.publishedAt,
           dateModified: article.updatedAt,

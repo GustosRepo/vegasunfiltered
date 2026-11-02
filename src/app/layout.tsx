@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, DM_Sans, DM_Serif_Display } from "next/font/google";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_SHARE_IMAGE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const headlineFont = Barlow_Condensed({
@@ -36,11 +36,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     locale: "en_US",
+    images: [SITE_SHARE_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
+    images: [SITE_SHARE_IMAGE],
   },
   robots: { index: true, follow: true },
 };

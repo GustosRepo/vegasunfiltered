@@ -1,7 +1,6 @@
-import { articleMetadata, articleStaticParams, renderArticleRoute } from "@/lib/article-route";
+import { articleMetadata, renderArticleRoute } from "@/lib/article-route";
 
 type Props = { params: Promise<{ slug: string }> };
-export function generateStaticParams() { return articleStaticParams("activities"); }
 export async function generateMetadata({ params }: Props) {
   return articleMetadata("activities", (await params).slug);
 }
