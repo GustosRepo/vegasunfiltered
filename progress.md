@@ -170,7 +170,8 @@ validation.
    imagery through the CMS before launch.
 4. **Operations need real integrations.** Scheduled publishing needs configured
    secrets and a monitored Vercel Cron run. Newsletter, analytics reporting,
-   and affiliate tracking are not connected.
+   affiliate tracking, and display advertising are not connected. Ads and
+   measurement are approved roadmap work, not active integrations.
 5. **Some media workflows remain basic.** Upload is one file at a time; full
    drag-and-drop/batch upload and richer media associations/search are not
    implemented. The SEO audit is an internal check, not an external crawler,
@@ -224,11 +225,74 @@ validation.
   hourly scheduled publication and cache invalidation.
 - Configure Vercel environment variables and the canonical domain; verify
   production auth callbacks, routes, metadata, sitemap, robots, and caching.
-- Decide whether newsletter, analytics, advertising, or affiliate integrations
-  are in scope; add them only with appropriate consent, privacy, and operational
-  handling.
+- Implement the approved ads/measurement roadmap below with appropriate consent,
+  privacy, performance, and operational handling. Newsletter remains a separate
+  future feature; do not track subscriptions before a real signup exists.
 - Add automated coverage for critical permission and publishing transitions
   once the Supabase test environment is available.
+
+### 4. Measure SEO and audience before monetizing with ads
+
+Recommended stack: **Google Search Console + GA4 + PageSpeed Insights/Core Web
+Vitals**, followed by the chosen ad provider's own revenue reports. Search
+Console measures Google search visibility; GA4 measures on-site behavior, not
+rankings. Neither tool is connected or verified by the current local tests.
+
+Execution order and completion evidence:
+
+1. **Production/content baseline:** publish real reviews, verify canonical
+   routes and sitemap, and optimize photo delivery. Record mobile performance.
+   Field targets: p75 LCP <= 2.5 s, INP <= 200 ms, CLS <= 0.1; field reports need
+   enough traffic and lab scores alone do not prove these thresholds.
+2. **Search Console:** verify domain ownership via DNS, submit the sitemap,
+   inspect published review URLs, and review actual indexing/query data.
+   Do not promise indexing or rankings from submission.
+3. **Consent/privacy:** choose regional behavior and any needed CMP, review
+   current legal/provider requirements, publish accurate provider/data/retention/
+   choice disclosures and a working contact, and support withdrawal/opt-outs.
+   Nonessential tags stay off until applicable consent permits collection;
+   Consent Mode alone is not consent management.
+4. **GA4:** implement consent-aware production public-page measurement, excluding
+   admin/login/private previews and test environments. Validate single page views
+   on initial load and client navigation, consent states, and blocked tags.
+   Proposed events: `review_read` on reaching the final verdict (not proof of
+   reading), controlled `outbound_click` categories, and actual successful
+   newsletter signups only when implemented. No private records, identifiers,
+   form inputs, or sensitive URL parameters may enter analytics.
+5. **Dashboard:** initially use provider dashboards; later wire real read-only
+   reporting into admin if warranted. Current analytics cards show configuration
+   status, not reports. Server-only reporting secrets, permission checks, date
+   ranges, freshness, and explicit API errors are required.
+
+Weekly scorecard: indexable/indexed reviews, organic search clicks/impressions/
+CTR, query and landing-page trends, engaged sessions, final-verdict reach,
+outbound actions, and mobile performance. Record baselines before making growth
+claims. Missing data is not zero; consent gaps, delays, and attribution explain
+why provider totals may differ.
+
+### 5. Integrate advertising without undermining reviews
+
+- Provider is **not selected**. Evaluate AdSense initially or another network
+  against its current requirements and terms; approval and revenue are not
+  guaranteed. No ad scripts, publisher IDs, or authorized seller records exist.
+- Prerequisites: original reviews, working public contact/privacy/disclosures,
+  consent handling, provider approval/setup, and a performance baseline.
+- Connect the disabled `AdSlot` component to consent-aware, labeled, responsive
+  placements with reserved space. Begin after substantive content or below
+  reviews; exclude admin/private, empty, and error pages. Keep placements out of
+  saved editorial documents. Protect cover, verdict, navigation, and controls.
+- Add `/ads.txt` only with exact provider-issued records. Test with supported
+  test tooling, never clicks on live ads.
+- Verify mobile/keyboard access, consent withdrawal, route transitions,
+  no-fill/ad-blocked behavior, and performance with ads enabled.
+- Report provider-confirmed revenue, page RPM, and viewability/fill where
+  available, separately from sponsorship and affiliate income. Compare
+  engagement and performance before/after ad changes; maintain a change log.
+
+Detailed implementation and acceptance checks:
+[`README.md — Ads, analytics, and SEO measurement roadmap`](./README.md#ads-analytics-and-seo-measurement-roadmap).
+This documentation update does not install tracking, change public privacy
+claims, grant account access, or enable ad delivery.
 
 ## Useful commands
 

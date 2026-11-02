@@ -246,8 +246,8 @@ and live URL inspection still require deployment and domain ownership.
 - Canonicals and Open Graph/Twitter metadata are set per route, with the
   canonical origin fixed to `https://vegasunfiltered.com`.
 - The homepage, About, Editorial Policy, Privacy, and Affiliate Disclosure pages
-  are currently indexable. Demo story pages, empty category sections, and the
-  unfinished Contact page are not.
+  are currently indexable. Removed demo URLs return not found; empty category
+  sections and the unfinished Contact page are not indexable.
 - `src/app/sitemap.ts` includes only indexable static pages and published
   editorial content. `src/app/robots.ts` advertises the sitemap.
 - Organization and WebSite JSON-LD use stable IDs. BlogPosting JSON-LD is
@@ -271,6 +271,116 @@ an email provider, server-side validation and consent handling, and update the
 Privacy page. Advertising, affiliate tracking, and analytics reporting are not
 configured. Sponsored labels, affiliate disclosure, and an opt-in ad slot
 component are available without loading tracking scripts.
+
+### Ads, analytics, and SEO measurement roadmap
+
+This is the agreed implementation scope, not a description of active services.
+No analytics tag, consent manager, advertising network, or reporting connector
+has been installed. The admin Analytics screen currently checks configuration
+presence only; detecting credentials is not proof of data collection or reports.
+
+#### Recommended measurement stack
+
+| Tool | Purpose | Initial setup and acceptance check |
+| --- | --- | --- |
+| Google Search Console | Google impressions, clicks, CTR, search queries, indexing, and reported search position | Verify the domain through DNS; submit `https://vegasunfiltered.com/sitemap.xml`; inspect a published review's canonical, crawl/index status, and rendered page. Verification is separate from GA4 and needs no visitor analytics tag. |
+| Google Analytics 4 (GA4) | Visits, acquisition sources, engagement, and useful outbound actions | Create a production property/web stream; implement consent-aware public-site collection; verify events in DebugView/Realtime and confirm reporting after processing. |
+| PageSpeed Insights and Search Console Core Web Vitals | Loading speed, responsiveness, and layout stability | Test real mobile review pages, including photos and later ads. Use lab results initially; field data may be unavailable until there is sufficient real traffic. |
+| Selected ad network's reporting | Ad impressions, revenue, page RPM, and viewability where available | Choose a provider, complete its review/setup, and verify actual delivery and revenue in its dashboard. Keep ad estimates separate from confirmed earnings. |
+
+Use Search Console for organic search visibility and GA4 for on-site behavior;
+neither replaces the other. GA4 is not required for Google indexing or ranking.
+Do not add multiple overlapping analytics products or Google Tag Manager unless
+there is an actual tag-management need. The existing admin reporting credential
+names are placeholders for a future server-side reporting connector, not
+instructions for installing the public GA4 tag.
+
+#### Phase 1: baseline before ads
+
+1. Deploy real, indexable reviews with accurate authorship, original photos,
+   visit context, prices, and useful internal links. Confirm HTTPS/canonical
+   redirects and public/private boundaries on the production domain.
+2. Verify Search Console and inspect published URLs. Record indexing problems
+   and fixes; sitemap submission is not a guarantee of indexing or ranking.
+3. Optimize large photo delivery and establish a mobile performance baseline.
+   Target field p75 LCP <= 2.5 seconds, INP <= 200 ms, and CLS <= 0.1. Lab tests
+   are diagnostics, not substitutes for these field measurements.
+4. Define privacy/consent behavior before loading GA4 or advertising scripts.
+   Review applicable law, visitor regions, and current provider requirements;
+   choose a consent-management platform if needed. Nonessential collection
+   should remain off until the applicable consent permits it. Provide consent
+   withdrawal/settings and implement required opt-outs. Consent Mode alone is
+   not a consent banner or a compliance solution.
+5. Update the public privacy policy to identify active providers, data/purposes,
+   cookies or storage, retention, choices, and a working privacy contact.
+   Do not claim tracking is absent once it is enabled.
+
+#### Phase 2: GA4 collection and editorial reporting
+
+- Load the public measurement tag only on eligible public production pages,
+  not admin, login, private previews, local development, or disposable E2E apps.
+  Configure internal-traffic exclusions and test consent granted, denied,
+  withdrawn, and blocked-script scenarios.
+- Track one `page_view` per actual navigation, including Next.js client-side
+  navigation. Choose automatic or manual page-view tracking deliberately to
+  avoid duplicate events.
+- Add `review_read` once per review/page view when the visitor reaches the
+  final-verdict section; it measures reaching a section, not verified reading.
+  Add `outbound_click` with controlled `link_type` values such as
+  `place_website` and `affiliate`. Use reviewed, low-cardinality parameters and
+  register custom dimensions only where reporting needs them.
+- Track newsletter subscriptions only after a real signup succeeds. Do not
+  invent conversions or treat arbitrary scrolling as a business outcome.
+  Reconcile affiliate clicks with the partner's actual conversion reporting.
+- Never send emails, private visit/receipt data, unpublished content, Auth IDs,
+  raw form values, or sensitive query parameters to analytics. Sanitize page
+  URLs before collection, including page-view and outbound-link payloads.
+- Use consistent campaign UTMs for social links, without personal data, to
+  distinguish social traffic from organic search and referrals.
+- Start with provider dashboards. Add read-only GA4/Search Console API reports
+  to the admin only when useful; keep API credentials server-only and show
+  date ranges, data freshness, and real permission/API errors. Never display
+  fabricated zero metrics or mark reporting connected merely from env presence.
+
+#### Phase 3: advertising
+
+- Evaluate Google AdSense as an initial option, or another publisher network
+  when its current eligibility and business terms fit. No provider is selected
+  or approved yet; do not promise acceptance, minimum traffic, or income.
+- Finish original content, public contact/privacy/disclosure pages, consent
+  handling, and provider verification before enabling delivery. Publish
+  `/ads.txt` only with the selected provider's exact authorized seller records;
+  never invent publisher IDs or add placeholder authorization lines.
+- Wire the existing disabled `AdSlot` to actual provider placements with
+  explicit labels and reserved responsive dimensions. Start conservatively
+  after substantive review content or below the article, not over the cover,
+  verdict, navigation, or controls. Keep ads out of admin/private pages and
+  empty/error pages. Do not insert slots into saved rich-text review content.
+- Preserve the review layout and avoid accidental-click placement, intrusive
+  overlays, and ad-driven layout shifts. Load third-party code through a
+  consent-aware integration and keep reviews usable when scripts are blocked
+  or an ad has no fill. Never click live ads to test them.
+- Re-test performance, keyboard/mobile accessibility, consent, route changes,
+  and empty placements with advertising enabled. Compare revenue against
+  engagement and performance, not revenue alone.
+- Display ads, paid editorial sponsorships, and affiliate links are separate
+  revenue sources. Keep each labeled and report each separately; none buys a
+  favorable review or score.
+
+#### Operating scorecard
+
+Review weekly: published/indexed reviews, Search Console clicks/impressions/
+CTR and query/page trends, organic landing-page visits, engaged sessions,
+final-verdict reach, outbound actions, and mobile performance. Search position
+is a contextual average, not a universal rank. Traffic and revenue may be zero
+or unavailable early on; do not invent targets or interpret missing data as zero.
+
+Review monthly once ads run: confirmed revenue, page RPM with its provider's
+definition, viewability/fill where available, and changes in speed/engagement.
+Compare matching date ranges and note consent/ad-blocking gaps, processing
+delays, and different attribution rules. GA4, Search Console, and ad-network
+totals will not necessarily match. Maintain a change log for deployments,
+tracking changes, and ad placements so changes can be interpreted honestly.
 
 ## Deploy to Vercel
 
