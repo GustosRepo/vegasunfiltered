@@ -119,3 +119,36 @@ test("inactivity warning appears only during the final two minutes", async ({ pa
   await expect(warning.getByRole("button", { name: "Stay signed in" })).toBeVisible();
   await expect(warning).toContainText("Unsaved review edits");
 });
+
+test("inline place form preserves the story and validates before creating", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("A visit worth writing about.");
+  await page.getByRole("button", { name: "Create and link place", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Create a place without leaving this review" })).toBeVisible();
+  await expect(page.locator("form form")).toHaveCount(0);
+  await page.getByRole("button", { name: "Create place and select", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Enter a place name" })).toBeVisible();
+  await page.getByLabel("New place name", { exact: true }).fill("Somewhere local");
+  await page.getByRole("button", { name: "Cancel new place", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("A visit worth writing about.");
+  await expect(page.getByRole("combobox", { name: "Place reviewed", exact: true })).toHaveValue("");
+});
+
+test("rich-text toolbar labels fit their buttons without overlap on mobile and desktop", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  const toolbar = page.getByRole("toolbar", { name: "Text formatting" }).first();
+  await expect(toolbar.getByRole("button", { name: "Numbered list", exact: true })).toBeVisible();
+  const problems = await toolbar.evaluate((element) => {
+    const buttons = [...element.querySelectorAll("button")];
+    return buttons.flatMap((button, index) => {
+      const rect = button.getBoundingClientRect();
+      const previous = buttons.slice(0, index).some((other) => {
+        const bounds = other.getBoundingClientRect();
+        return rect.left < bounds.right && rect.right > bounds.left && rect.top < bounds.bottom && rect.bottom > bounds.top;
+      });
+      return button.scrollWidth > button.clientWidth || rect.height < 44 || previous ? [button.textContent] : [];
+    });
+  });
+  expect(problems).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});

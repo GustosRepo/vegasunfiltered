@@ -46,6 +46,16 @@ export async function getAdminIdentity(): Promise<{
     };
   }
 
+  const { data: token, error: tokenError } = await client.auth.getClaims();
+  if (tokenError) throw new Error(`Could not verify CMS permission claims: ${tokenError.message}`);
+  const tokenMetadata = token?.claims.app_metadata;
+  if (typeof tokenMetadata !== "object" || tokenMetadata === null || tokenMetadata.cms_role !== roleClaim) {
+    return {
+      client, identity: null,
+      accessError: "Your account role changed, but this sign-in still has old permissions. Sign out and sign in again to refresh your CMS access.",
+    };
+  }
+
   const { data: profile, error: profileError } = await client
     .from("profiles")
     .select("display_name, role")

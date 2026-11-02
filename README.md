@@ -35,8 +35,14 @@ npm run build
 - Start at `/admin/reviews/new`, choose Restaurant or Activity, write the
   experience, and optionally enter an overall editorial score from 0 to 10
   (one decimal place). Blank means unscored; no score is inferred from old content.
-- Editors can link a matching place, add one through **Add a place**, or start a
-  review from its place record. After saving a review, **Record this visit**
+- Owners/editors can search matching places or use **Create and link place**
+  inside the review editor without leaving their writing. Enter the name and
+  location, check the generated URL slug (editable for another branch), then
+  create; the new place is selected automatically. Creation saves the place
+  separately; wait for **All changes saved** to persist the review's link.
+  Drafts may be unlinked; publishing/scheduling requires a matching place.
+  Contributors still cannot create or change place records.
+  Reviews can also start from a place record. After saving a review, **Record this visit**
   preselects the review and linked place. Existing visits are linked from the
   review editor. Costs for activity tickets use the tickets/additional-charges
   field. Visit details and receipts stay private unless explicitly opted in.
@@ -57,6 +63,9 @@ cover/title/disclosure, quick verdict, at-a-glance facts, our experience,
 what we tried, worth knowing, would we go back, and a photo gallery.
 The score remains optional. Empty optional sections are hidden; the narrative
 sections support rich text, inline library images, links, lists, and video.
+The editor groups the basics, experience/practical narrative, verdict/score,
+and photography, with SEO and publishing in separate tabs. Formatting buttons
+wrap with full-width labels and 44px minimum height on mobile and desktop.
 
 Open a review's **Photos** tab to upload without leaving the editor, choose a
 cover, or add existing media to its gallery. Reorder gallery photos with
@@ -145,6 +154,40 @@ deadline; before expiry a tab checks for activity recorded by another tab.
 Expired leases cannot be revived by the heartbeat; sign in again instead.
 This is an inactivity limit, not an absolute maximum session duration or MFA.
 Auth-token refresh alone cannot bypass the CMS lease checks.
+
+### Publication place requirement and save troubleshooting
+
+Apply [`20261102000005_review_publication_place.sql`](./supabase/migrations/20261102000005_review_publication_place.sql)
+after migration 04 and before deploying this editor update. It adds a database
+trigger, not new permissions: owners/editors retain their roles and contributors
+still cannot manage places. Application checks provide actionable feedback,
+and the database also rejects direct writes or scheduled publication without a
+matching place. Unlinked drafts remain valid.
+
+Existing published records are not rewritten; unrelated edits remain possible.
+Link a place before republishing an old unlinked review. Return a published or
+scheduled review to draft before changing its type and linked place together.
+Before enabling scheduled publishing, find and repair any older unlinked or
+mismatched scheduled records (or return them to draft):
+
+```sql
+select a.id, a.title, a.status
+from public.articles a
+left join public.restaurants p on p.id = a.restaurant_id
+where a.status = 'scheduled'
+  and (p.id is null or p.place_type <> a.review_type);
+```
+
+An invalid due record fails the cron transaction explicitly; monitor failures
+and repair it rather than assuming other due reviews published successfully.
+
+Review saves no longer label every database permission denial as a role issue.
+They distinguish expired leases, stale sign-in permission claims, and database
+permission errors. After a role change, sign out and sign in again; verify that
+the Auth role and editorial profile agree and all migrations are installed.
+Do not disable RLS to work around an Owner save error. A hosted Owner save has
+not yet been verified by this workflow; the original failure's database cause
+is not confirmed.
 
 At timeout, unsaved review form contents are kept in same-tab `sessionStorage`,
 scoped to the signed-in user and review (or new draft). After signing in as the

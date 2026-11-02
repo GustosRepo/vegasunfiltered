@@ -4,6 +4,36 @@ Last updated: 2026-11-02
 
 ## Project snapshot
 
+Review-editor streamlining:
+- Fixed full text toolbar labels overflowing fixed-width buttons; buttons wrap
+  and have 44px minimum height. Measured overlap/overflow checks pass on desktop
+  and mobile Chromium.
+- Grouped basics, narrative, verdict/score, and photography. SEO/publishing remain
+  secondary tabs; no second content format was introduced.
+- Owners/editors can filter existing places and create/select a place inline
+  with name/location and an editable auto-generated slug, retaining review text
+  and photos. Place creation and review saving are separate writes: wait for
+  **All changes saved** for the selected link to persist. Contributors keep
+  their existing restrictions.
+- Corrected stale-token role detection and misleading save-denial feedback:
+  expired sessions and database permission errors are distinguished. The
+  original hosted Owner failure is not conclusively diagnosed or live-verified.
+- Added migration `20261102000005_review_publication_place.sql`, required after
+  migration 04. Unlinked drafts are allowed; matching places are required for
+  scheduling/publication, including direct writes and cron. Existing published
+  records are not rewritten; unrelated edits remain possible. Audit and repair
+  older scheduled records before deployment (query in README); an invalid due
+  record fails the cron transaction rather than pretending it published.
+- Private previews now include linked place and neighborhood context for
+  authorized editors.
+
+Validation for this update: isolated production build and 80 public/editor/model
+browser tests passed; TypeScript, lint, and whitespace checks passed.
+Authenticated inline creation/persistence/publication tests and database
+constraint tests were extended, but are not executed against a working database:
+the existing local Docker storage I/O blocker remains unresolved. Test discovery
+was verified separately; no hosted database/environment files were accessed.
+
 Admin inactivity implementation: 30-minute server-backed lease, 2-minute
 warning, explicit stay-signed-in renewal, and same-tab review recovery. New
 `20261102000004_admin_idle_sessions.sql` must be applied before deploying this

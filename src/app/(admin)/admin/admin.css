@@ -146,7 +146,11 @@
   .cms-review-section { padding: 16px; }
 }
 .cms-editor-toolbar { display: flex; flex-wrap: wrap; gap: 3px; padding: 7px; border-bottom: 1px solid var(--cms-line); background: #fafbfc; }
-.cms-editor-toolbar button { width: 31px; height: 31px; display: grid; place-items: center; border: 0; color: #525a66; background: transparent; cursor: pointer; }
+.cms-editor-toolbar button { flex: 0 0 auto; width: auto; min-height: 44px; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border: 0; color: #525a66; background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.cms-editor-layout, .cms-editor-layout > .cms-panel, .cms-editor-shell { min-width: 0; max-width: 100%; }
+.cms-editor-toolbar { align-items: center; }
+.cms-editor-toolbar button:focus-visible { outline: 2px solid var(--cms-accent); outline-offset: -2px; }
+.cms-inline-place { margin-bottom: 16px; }
 .cms-editor-toolbar button:hover, .cms-editor-toolbar button.is-active { color: var(--cms-ink); background: #e9edf1; }
 .cms-editor-toolbar button:disabled { opacity: .45; cursor: default; }
 .cms-rich-editor { min-height: 350px; padding: 16px 19px; outline: none; font-family: Georgia, serif; font-size: 15px; line-height: 1.75; }

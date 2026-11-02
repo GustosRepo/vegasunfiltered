@@ -15,6 +15,7 @@ import { ReviewRichText, type ReviewMediaOption } from "@/components/admin/revie
 import { ReviewPhotos } from "@/components/admin/review-photos";
 import { MediaUploadForm } from "@/components/admin/media-upload-form";
 import { blankReviewTemplate, readReviewTemplate } from "@/lib/review-template";
+import { InlinePlace, type ReviewPlace } from "@/components/admin/inline-place";
 
 type Category = { id: string; name: string; slug: string };
 type MediaOption = ReviewMediaOption;
@@ -73,6 +74,10 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     mode: "onChange",
   });
   const [tab, setTab] = useState<Tab>("content");
+  const [createdPlaces, setCreatedPlaces] = useState<ReviewPlace[]>([]);
+  const [placeSearch, setPlaceSearch] = useState("");
+  const [creatingPlace, setCreatingPlace] = useState(false);
+  const availablePlaces = [...createdPlaces, ...restaurants.filter((place) => !createdPlaces.some((created) => created.id === place.id))];
   const [uploads, setUploads] = useState<MediaOption[]>([]);
   const availableMedia = [...uploads, ...media.filter((item) => !uploads.some((upload) => upload.id === item.id))];
   const [scheduledLocal, setScheduledLocal] = useState("");
@@ -90,6 +95,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const metaDescription = useWatch({ control: form.control, name: "metaDescription" });
   const template = useWatch({ control: form.control, name: "reviewTemplate" }) ?? blankReviewTemplate();
   const featuredMediaId = useWatch({ control: form.control, name: "featuredMediaId" });
+  const selectedPlaceId = useWatch({ control: form.control, name: "restaurantId" });
   const status = article?.status ?? "draft";
   const expiringSession = useRef(false);
   const recoveryKey = recoveryUserId ? `cms-review-recovery:${recoveryUserId}:${article?.id ?? "new"}` : null;
@@ -287,27 +293,31 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
         </nav>
         <form onSubmit={(event) => { event.preventDefault(); void persistRef.current(); }}>
           {tab === "content" && <>
+            <section className="cms-review-section"><h2>The basics</h2><p className="cms-muted">Identify the visit and the place. Drafts can stay unlinked; publishing requires a matching place.</p>
             <div className="cms-form-grid">
               <InputField error={form.formState.errors.title?.message} label="Headline" {...form.register("title")} />
               <InputField error={form.formState.errors.slug?.message} label="URL slug" {...form.register("slug")} />
               <InputField className="cms-form-span" error={form.formState.errors.subtitle?.message} label="Subtitle / dek" {...form.register("subtitle")} />
-              <label className="cms-field"><span className="cms-label">Review type</span><select {...form.register("reviewType", { onChange: () => form.setValue("restaurantId", "", { shouldDirty: true }) })}><option value="restaurant">Restaurant</option><option value="activity">Activity</option></select></label>
-              <InputField label="Overall score (0–10, optional)" type="number" min={0} max={10} step={0.1} error={form.formState.errors.overallScore?.message} {...form.register("overallScore", { setValueAs: (value: string | number) => value === "" ? "" : Number(value) })} />
-              <p className="cms-muted cms-form-span">Leave the score blank until you have a verdict. This is your editorial opinion, not an average of customer ratings. Use tags for cuisine, drinks, date nights, and budget.</p>
-              <label className="cms-field"><span className="cms-label">Featured image</span><select {...form.register("featuredMediaId")}><option value="">No featured image</option>{availableMedia.map((item) => <option key={item.id} value={item.id}>{item.altText || item.caption || item.id}</option>)}</select></label>
+              <label className="cms-field"><span className="cms-label">Review type</span><select aria-disabled={creatingPlace} inert={creatingPlace} {...form.register("reviewType", { onChange: () => form.setValue("restaurantId", "", { shouldDirty: true }) })}><option value="restaurant">Restaurant</option><option value="activity">Activity</option></select></label>
               {role !== "contributor" && <>
-                <label className="cms-field"><span className="cms-label">Place reviewed</span><select {...form.register("restaurantId")}><option value="">Not linked yet</option>{restaurants.filter((place) => place.place_type === reviewType).map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}</select></label>
-                <div className="cms-field"><span className="cms-label">Place details</span><Link href="/admin/places/new">Add a place</Link>{article?.restaurant_id && <Link href={`/admin/places/${article.restaurant_id}/edit`}>Edit linked place</Link>}</div>
+                <label className="cms-field"><span className="cms-label">Find an existing place</span><input value={placeSearch} onChange={(event) => setPlaceSearch(event.target.value)} placeholder="Search place names" /></label>
+                <label className="cms-field"><span className="cms-label">Place reviewed</span><select {...form.register("restaurantId")}><option value="">Not linked yet</option>{availablePlaces.filter((place) => place.place_type === reviewType && (place.id === selectedPlaceId || place.name.toLowerCase().includes(placeSearch.toLowerCase()))).map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}</select></label>
+                <InlinePlace key={reviewType} reviewType={reviewType} onBusyChange={setCreatingPlace} onCreated={(place) => {
+                  setCreatedPlaces((current) => [...current, place]);
+                  setPlaceSearch("");
+                  form.setValue("restaurantId", place.id, { shouldDirty: true, shouldValidate: true });
+                }} />
+                {selectedPlaceId && <div className="cms-field"><Link href={`/admin/places/${selectedPlaceId}/edit`}>Edit linked place details (save review first)</Link></div>}
                 <label className="cms-field"><span className="cms-label">Neighborhood</span><select {...form.register("neighborhoodId")}><option value="">No neighborhood</option>{neighborhoods.map((neighborhood) => <option key={neighborhood.id} value={neighborhood.id}>{neighborhood.name}</option>)}</select></label>
                 <label className="cms-checkbox-field cms-form-span"><input type="checkbox" {...form.register("isSponsored")} /> Mark as sponsored content and show the public disclosure label</label>
               </>}
               <InputField className="cms-form-span" error={form.formState.errors.tags?.message} label="Tags (comma-separated)" {...form.register("tags")} />
-              <label className="cms-field cms-form-span"><span className="cms-label">Quick verdict</span><textarea maxLength={1500} placeholder="Your short, honest takeaway." {...form.register("reviewTemplate.quickVerdict")} /></label>
               <InputField label="Visit date (public, optional)" type="date" error={form.formState.errors.reviewTemplate?.visitedAt?.message} {...form.register("reviewTemplate.visitedAt")} />
               <InputField label="Price / budget" maxLength={120} placeholder="e.g. $80 per person, including drinks" {...form.register("reviewTemplate.priceRange")} />
               <InputField className="cms-form-span" label="Best for" maxLength={240} placeholder="e.g. A relaxed date night" {...form.register("reviewTemplate.bestFor")} />
             </div>
-            <section className="cms-review-section"><h2>Our experience</h2><p className="cms-muted">Tell the story of your visit. Existing article text stays here. Insert photos between paragraphs using the media picker.</p>
+            </section>
+            <section className="cms-review-section"><h2>Our experience</h2><p className="cms-muted">Start with the story: the people, the room, and what the visit felt like. Use your own voice. Insert your photos between paragraphs using the media picker.</p>
               <ReviewRichText key={`body-${editorVersion}`} label="Article body" content={form.getValues("content")} media={availableMedia} onChange={(content) => form.setValue("content", content, { shouldDirty: true, shouldValidate: true })} />
             </section>
             {([
@@ -317,6 +327,14 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
             ] as const).map(([field, label, hint]) => <section className="cms-review-section" key={field}><h2>{label}</h2><p className="cms-muted">{hint} Leave blank to hide this section.</p>
               <ReviewRichText key={`${field}-${editorVersion}`} label={label} content={form.getValues(`reviewTemplate.${field}`) ?? blankDocument} media={availableMedia} onChange={(content) => form.setValue(`reviewTemplate.${field}`, content, { shouldDirty: true, shouldValidate: true })} />
             </section>)}
+            <section className="cms-review-section"><h2>Your verdict and score</h2><p className="cms-muted">The story comes first. The optional score is your opinion, not a customer average.</p>
+              <label className="cms-field"><span className="cms-label">Quick verdict</span><textarea maxLength={1500} placeholder="Your short, honest takeaway." {...form.register("reviewTemplate.quickVerdict")} /></label>
+              <InputField label="Overall score (0–10, optional)" type="number" min={0} max={10} step={0.1} error={form.formState.errors.overallScore?.message} {...form.register("overallScore", { setValueAs: (value: string | number) => value === "" ? "" : Number(value) })} />
+            </section>
+            <section className="cms-review-section"><h2>Photography</h2><p className="cms-muted">Build the photo story in the Photos tab: upload, caption, reorder, and choose a cover without leaving this review.</p>
+              <label className="cms-field"><span className="cms-label">Featured image</span><select {...form.register("featuredMediaId")}><option value="">No featured image</option>{availableMedia.map((item) => <option key={item.id} value={item.id}>{item.altText || item.caption || item.id}</option>)}</select></label>
+              <button className="cms-secondary-button" type="button" onClick={() => setTab("photos")}>Manage review photos</button>
+            </section>
           </>}
           {tab === "photos" && <ReviewPhotos media={availableMedia} photos={template.gallery} featuredMediaId={featuredMediaId}
             onCoverChange={(id) => form.setValue("featuredMediaId", id, { shouldDirty: true })}

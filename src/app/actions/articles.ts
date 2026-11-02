@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { fromZonedTime } from "date-fns-tz";
 import { z } from "zod";
-import { requireCmsRole } from "@/lib/admin-auth";
+import { getAdminIdentity, requireCmsRole, type CmsRole } from "@/lib/admin-auth";
 import { withReviewTemplate } from "@/lib/review-template";
 import {
   articleDraftSchema,
@@ -48,7 +48,8 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
     }
   }
 
-  const access = await requireCmsRole(["owner", "editor", "contributor"]);
+  const access = await getAdminIdentity();
+  if (!access.client || !access.identity) return { ok: false, message: access.accessError ?? "Your CMS session is unavailable. Sign in again before saving; keep this tab open to retain your writing." };
   const { data, error } = await access.client.rpc("save_review", {
     p_review: {
       ...parsed.data,
@@ -83,7 +84,10 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
       return { ok: false, message: "That URL slug is already in use." };
     }
     if (error.code === "42501") {
-      return { ok: false, message: "Your role does not allow this article change." };
+      const { data: deadline, error: sessionError } = await access.client.rpc("cms_session_deadline");
+      if (sessionError) return { ok: false, message: `Could not verify CMS session permissions: ${sessionError.message}` };
+      if (!deadline) return { ok: false, message: "Your CMS session expired while saving. Sign in again; keep this tab open to retain your writing." };
+      return { ok: false, message: `Review was not saved. Database permission check failed for ${access.identity.role}: ${error.message}. Check that the CMS migrations are applied and sign in again after role changes.` };
     }
     return { ok: false, message: `Article was not saved: ${error.message}` };
   }
@@ -109,11 +113,13 @@ export async function transitionArticle(input: unknown): Promise<CmsActionResult
   if (!parsed.success) {
     return { ok: false, message: "The requested publishing change is invalid." };
   }
-  const allowed =
+  const allowed: readonly CmsRole[] =
     parsed.data.targetStatus === "in_review"
       ? ["owner", "editor", "contributor"] as const
       : ["owner", "editor"] as const;
-  const { client } = await requireCmsRole([...allowed]);
+  const { client, identity, accessError } = await getAdminIdentity();
+  if (!client || !identity) return { ok: false, message: accessError ?? "Your session expired. Sign in again before changing publication status." };
+  if (!allowed.includes(identity.role)) return { ok: false, message: "Your role does not allow that publishing action." };
 
   let scheduledAt: string | null = null;
   if (parsed.data.targetStatus === "scheduled") {
@@ -128,6 +134,15 @@ export async function transitionArticle(input: unknown): Promise<CmsActionResult
     scheduledAt = converted.toISOString();
   }
 
+  if (parsed.data.targetStatus === "published" || parsed.data.targetStatus === "scheduled") {
+    const { data: review, error: reviewError } = await client.from("articles").select("restaurant_id,review_type").eq("id", parsed.data.articleId).maybeSingle();
+    if (reviewError) return { ok: false, message: `Could not check the review's place: ${reviewError.message}` };
+    if (!review) return { ok: false, message: "This review is unavailable. Reload the review list." };
+    if (!review.restaurant_id) return { ok: false, message: "Link a restaurant or activity place in Content before publishing or scheduling. You can still save an unlinked draft." };
+    const { data: place, error: placeError } = await client.from("restaurants").select("place_type").eq("id", review.restaurant_id).maybeSingle();
+    if (placeError) return { ok: false, message: `Could not check the linked place: ${placeError.message}` };
+    if (!place || place.place_type !== review.review_type) return { ok: false, message: "Choose an available place matching this review's type before publishing or scheduling." };
+  }
   const { error } = await client.rpc("transition_article", {
     p_article_id: parsed.data.articleId,
     p_target_status: parsed.data.targetStatus,

@@ -75,10 +75,20 @@ async function AdminSectionContent({ params, searchParams }: Props) {
     }
     if (path.length === 3 && path[2] === "preview") {
       const { data, error } = await access.client.from("articles")
-        .select("id,title,subtitle,slug,content,review_type,overall_score,is_indexable,is_sponsored,published_at,updated_at,category:categories(name,slug),seo:article_seo(seo_title,meta_description,canonical_url,indexing_enabled),featured:media!articles_featured_media_fk(storage_bucket,storage_path,alt_text,caption)")
+        .select("id,title,subtitle,slug,content,restaurant_id,neighborhood_id,review_type,overall_score,is_indexable,is_sponsored,published_at,updated_at,category:categories(name,slug),seo:article_seo(seo_title,meta_description,canonical_url,indexing_enabled),featured:media!articles_featured_media_fk(storage_bucket,storage_path,alt_text,caption)")
         .eq("id", path[1]).maybeSingle();
       if (error) throw new Error(`Could not load article preview: ${error.message}`);
       if (!data) notFound();
+      const [place, neighborhood] = await Promise.all([
+        data.restaurant_id && access.identity.role !== "contributor"
+          ? access.client.from("restaurants").select("name,cuisine,address,city,state,postal_code,website").eq("id", data.restaurant_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        data.neighborhood_id
+          ? access.client.from("neighborhoods").select("name,slug,description").eq("id", data.neighborhood_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (place.error) throw new Error(`Could not load preview place: ${place.error.message}`);
+      if (neighborhood.error) throw new Error(`Could not load preview neighborhood: ${neighborhood.error.message}`);
       const seo = Array.isArray(data.seo) ? data.seo[0] : data.seo;
       const featured = Array.isArray(data.featured) ? data.featured[0] : data.featured;
       const env = getSupabaseEnvironment();
@@ -110,8 +120,12 @@ async function AdminSectionContent({ params, searchParams }: Props) {
         receipt: null,
         authorName: null,
         affiliateLinks: [],
-        restaurant: null,
-        neighborhood: null,
+        restaurant: place.data ? {
+          name: place.data.name, cuisine: place.data.cuisine, address: place.data.address,
+          city: place.data.city, state: place.data.state, postalCode: place.data.postal_code,
+          website: place.data.website?.startsWith("https://") ? place.data.website : null,
+        } : null,
+        neighborhood: neighborhood.data,
         sponsored: data.is_sponsored === true,
       };
       return <><p className="cms-alert">Private preview — only signed-in editorial staff can view this unpublished content.</p><CmsPublishedArticle article={article} isPreview /></>;

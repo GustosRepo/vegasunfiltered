@@ -71,6 +71,15 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
   await expect(page.getByLabel("Article body", { exact: true })).toContainText("Original reporting");
   await expect(page.getByLabel("Quick verdict", { exact: true })).toHaveValue("A date night worth repeating.");
   await expect(page.getByRole("textbox", { name: "What we tried", exact: true })).toContainText("seasonal menu");
+  await page.getByRole("button", { name: "Create and link place", exact: true }).click();
+  await page.getByLabel("New place name", { exact: true }).fill(`Place ${backend.slug}`);
+  await page.getByLabel("Street address / location", { exact: true }).fill("123 Test-only Avenue");
+  await page.getByRole("button", { name: "Create place and select", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Place created and selected" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Place reviewed", exact: true })).not.toHaveValue("");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "All changes saved" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("Original reporting");
   await page.getByRole("link", { name: "Private preview", exact: true }).click();
   await expect(page.getByText(/Private preview/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: `E2E ${backend.slug}` })).toBeVisible();

@@ -47,10 +47,20 @@ export const test = base.extend<{ backend: Backend; ownerPage: Page }>({
         const articleSlug = `${slug}-${randomUUID().slice(0, 8)}`;
         const { data: category, error: categoryError } = await admin.from("categories").select("id").eq("slug", "eat").single();
         if (categoryError) throw categoryError;
+        let placeId: string | null = null;
+        if (options.status === "published" || options.status === "approved" || options.status === "scheduled") {
+          const { data: place, error: placeError } = await admin.from("restaurants").insert({
+            name: `E2E place ${articleSlug}`, slug: articleSlug, place_type: "restaurant",
+            city: "Las Vegas", state: "NV", address: "Test-only location", created_by: accounts.owner.id,
+          }).select("id").single();
+          if (placeError) throw placeError;
+          placeId = place.id;
+        }
         const { data, error } = await admin.from("articles").insert({
           title: `E2E story ${articleSlug}`, slug: articleSlug, kind: "editorial_story",
           author_id: accounts[options.author ?? "owner"].id,
           category_id: category.id, status: options.status ?? "draft",
+          restaurant_id: placeId,
           is_indexable: options.indexable ?? false,
           published_at: options.status === "published" ? new Date().toISOString() : null,
           content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: `Verified E2E reporting ${articleSlug}. `.repeat(12) }] }] },

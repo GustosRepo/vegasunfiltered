@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { requireCmsRole } from "@/lib/admin-auth";
+import { getAdminIdentity, requireCmsRole } from "@/lib/admin-auth";
 import { restaurantSchema } from "@/lib/cms-schemas";
 
 export type RestaurantActionResult = { ok: boolean; message: string; id?: string };
@@ -18,7 +18,9 @@ export async function saveRestaurant(input: unknown): Promise<RestaurantActionRe
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check restaurant fields." };
   }
-  const { client, identity } = await requireCmsRole(["owner", "editor"]);
+  const { client, identity, accessError } = await getAdminIdentity();
+  if (!client || !identity) return { ok: false, message: accessError ?? "Your CMS session is unavailable. Sign in again before creating a place." };
+  if (identity.role === "contributor") return { ok: false, message: "Only owners and editors can create or change places." };
   let operatingHours: Record<string, string>;
   try {
     const hours: unknown = JSON.parse(parsed.data.operatingHours || "{}");
@@ -68,7 +70,7 @@ export async function saveRestaurant(input: unknown): Promise<RestaurantActionRe
     : client.from("restaurants").insert(row).select("id").single();
   const { data, error } = await query;
   if (error) {
-    if (error.code === "23505") return { ok: false, message: "That restaurant slug is already in use." };
+    if (error.code === "23505") return { ok: false, message: "That place URL slug is already in use. Select the existing place, or use a different slug for another branch." };
     return { ok: false, message: `Restaurant was not saved: ${error.message}` };
   }
   revalidatePath("/admin/places");
