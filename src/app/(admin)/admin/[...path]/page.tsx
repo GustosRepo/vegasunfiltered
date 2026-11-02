@@ -43,7 +43,7 @@ async function AdminSectionContent({ params, searchParams }: Props) {
         loadMedia(access.client),
         loadArticleContext(access.client, access.identity.role),
       ]);
-      return <ArticleEditor categories={categories} media={media} {...context} initialPlaceId={query.place} role={access.identity.role} />;
+      return <ArticleEditor recoveryUserId={access.identity.id} categories={categories} media={media} {...context} initialPlaceId={query.place} role={access.identity.role} />;
     }
     const editId = path.length === 2 && path[1] !== "new"
       ? path[1]
@@ -71,7 +71,7 @@ async function AdminSectionContent({ params, searchParams }: Props) {
         const values = Array.isArray(row.tags) ? row.tags : row.tags ? [row.tags] : [];
         return values.flatMap((tag: unknown) => typeof tag === "object" && tag !== null && "name" in tag && typeof tag.name === "string" ? [tag.name] : []);
       }).join(", ");
-      return <ArticleEditor article={{ ...data, tags }} categories={categories} media={media} {...context} visits={visits.data ?? []} role={access.identity.role} />;
+      return <ArticleEditor recoveryUserId={access.identity.id} article={{ ...data, tags }} categories={categories} media={media} {...context} visits={visits.data ?? []} role={access.identity.role} />;
     }
     if (path.length === 3 && path[2] === "preview") {
       const { data, error } = await access.client.from("articles")

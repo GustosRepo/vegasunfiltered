@@ -33,6 +33,10 @@ export async function getAdminIdentity(): Promise<{
   }
   if (!user) return { client, identity: null };
 
+  const { data: deadline, error: sessionError } = await client.rpc("cms_session_deadline");
+  if (sessionError) throw new Error(`Could not check CMS inactivity limit. Apply the admin idle-session migration: ${sessionError.message}`);
+  if (!deadline) return { client, identity: null, accessError: "Your editorial session expired after inactivity. Sign in again. Recoverable review edits will be offered when you reopen the review." };
+
   const roleClaim = user.app_metadata.cms_role;
   if (typeof roleClaim !== "string" || !roles.includes(roleClaim as CmsRole)) {
     return {

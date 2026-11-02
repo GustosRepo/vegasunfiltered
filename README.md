@@ -126,6 +126,42 @@ The protected admin layout is request-rendered and uses `instant = false`:
 session verification and redirects must finish before the workspace is shown.
 This exception is scoped to the protected CMS, not the public publication.
 
+### Admin inactivity timeout
+
+Apply [`20261102000004_admin_idle_sessions.sql`](./supabase/migrations/20261102000004_admin_idle_sessions.sql)
+after the review-first migration, **before deploying the timeout code**. Existing
+sessions must sign in again: only freshly authenticated Supabase sessions can
+initialize a new inactivity lease. This migration adds a private lease table
+linked to Supabase Auth sessions, a server-time expiry RPC, and restrictive
+authenticated RLS policies on CMS tables and editorial/private receipt storage.
+Anonymous public reads and service-role operations retain their existing policy
+behavior; public editorial image URLs remain public.
+
+The admin signs out after 30 minutes without recorded activity and warns during
+the final 2 minutes. Typing, pointer interaction, and scrolling renew the lease,
+at most once a minute; passive autosaves, prefetches, token refreshes, and open
+tabs do not. **Stay signed in** explicitly renews it. Tabs share the server
+deadline; before expiry a tab checks for activity recorded by another tab.
+Expired leases cannot be revived by the heartbeat; sign in again instead.
+This is an inactivity limit, not an absolute maximum session duration or MFA.
+Auth-token refresh alone cannot bypass the CMS lease checks.
+
+At timeout, unsaved review form contents are kept in same-tab `sessionStorage`,
+scoped to the signed-in user and review (or new draft). After signing in as the
+same user, reopen that review or New review and choose **Restore unsaved review**.
+Recovery does not silently overwrite the database. Discard explicitly or save
+successfully to clear the recovery copy. Tab closure/storage clearing can lose
+the copy; it is not a backup, encrypted vault, or a mechanism for locking down
+an unattended browser. This recovery applies to the review editor, not every
+admin form. If preservation fails, automatic redirection stops with an explicit
+error so writing can be copied; server authorization remains expired.
+
+Warning/sign-out/API failures are shown explicitly. If a browser sleeps, timers
+may run late, but server deadlines still apply on the next protected operation.
+The custom SQL enforcement needs live validation; local database E2E is currently
+blocked by Docker storage I/O errors. Do not treat passing public browser tests
+as evidence that the migration was applied to hosted Supabase.
+
 ### Supabase setup
 
 1. Create a Supabase project and copy `.env.example` to `.env.local`. Set

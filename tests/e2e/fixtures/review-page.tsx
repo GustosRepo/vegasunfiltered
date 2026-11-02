@@ -4,6 +4,7 @@ import type { PublishedCmsArticle } from "@/lib/cms-content";
 import { ArticleEditor } from "@/components/admin/article-editor";
 import { Suspense } from "react";
 import "@/app/(admin)/admin/admin.css";
+import { IdleSession } from "@/components/admin/idle-session";
 
 const text = (value: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: value }] }] });
 const template = {
@@ -43,6 +44,10 @@ export function ReviewEditorTestPage() {
   return <div className="cms-app"><main className="cms-content">
     <Suspense fallback={<p>Loading review editor...</p>}><ArticleEditor categories={[]} media={template.gallery.map((photo) => ({
       id: photo.mediaId, url: photo.url, altText: photo.altText, caption: photo.caption, credit: photo.credit,
-    }))} restaurants={[]} neighborhoods={[]} role="owner" /></Suspense>
+    }))} restaurants={[]} neighborhoods={[]} role="owner" recoveryUserId="fixture-owner" /></Suspense>
   </main></div>;
+}
+
+export function IdleSessionTestPage() {
+  return <div className="cms-app"><h1>Session timer test</h1><IdleSession initialDeadline={4102444800000} /></div>;
 }

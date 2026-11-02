@@ -39,7 +39,7 @@ type Tab = "content" | "photos" | "seo" | "publishing";
 type ArticleContextOption = { id: string; name: string };
 type PlaceOption = ArticleContextOption & { place_type: "restaurant" | "activity" };
 
-export function ArticleEditor({ article, media, restaurants, neighborhoods, initialPlaceId, visits = [], role }: { article?: Article; categories: Category[]; media: MediaOption[]; restaurants: PlaceOption[]; neighborhoods: ArticleContextOption[]; initialPlaceId?: string; visits?: { id: string; visited_at: string }[]; role: CmsRole }) {
+export function ArticleEditor({ article, media, restaurants, neighborhoods, initialPlaceId, visits = [], role, recoveryUserId }: { article?: Article; categories: Category[]; media: MediaOption[]; restaurants: PlaceOption[]; neighborhoods: ArticleContextOption[]; initialPlaceId?: string; visits?: { id: string; visited_at: string }[]; role: CmsRole; recoveryUserId?: string }) {
   const router = useRouter();
   const initialSeo = Array.isArray(article?.seo) ? article.seo[0] : article?.seo;
   const form = useForm<ArticleDraftValues>({
@@ -91,6 +91,47 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const template = useWatch({ control: form.control, name: "reviewTemplate" }) ?? blankReviewTemplate();
   const featuredMediaId = useWatch({ control: form.control, name: "featuredMediaId" });
   const status = article?.status ?? "draft";
+  const expiringSession = useRef(false);
+  const recoveryKey = recoveryUserId ? `cms-review-recovery:${recoveryUserId}:${article?.id ?? "new"}` : null;
+  const [recovery, setRecovery] = useState<ArticleDraftValues | null>(null);
+  const [editorVersion, setEditorVersion] = useState(0);
+
+  useEffect(() => {
+    if (!recoveryKey) return;
+    const timer = window.setTimeout(() => {
+      try {
+        const stored = sessionStorage.getItem(recoveryKey);
+        if (stored) {
+          const values: unknown = JSON.parse(stored);
+          if (typeof values !== "object" || values === null || !("title" in values) || !("slug" in values)
+            || typeof values.title !== "string" || typeof values.slug !== "string") {
+            throw new Error("Stored recovery draft is invalid.");
+          }
+          const parsed = articleDraftSchema.safeParse({ ...values, title: "Recovery draft", slug: "recovery-draft" });
+          if (!parsed.success) throw new Error("Stored recovery draft is invalid.");
+          setRecovery({ ...parsed.data, title: values.title, slug: values.slug });
+        }
+      } catch (error) {
+        setSaveMessage(`Recovery unavailable: ${error instanceof Error ? error.message : "Browser storage failed."}`);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [recoveryKey]);
+
+  useEffect(() => {
+    if (!recoveryKey) return;
+    const preserve = (event: Event) => {
+      try {
+        if (form.formState.isDirty || saveRef.current) sessionStorage.setItem(recoveryKey, JSON.stringify(form.getValues()));
+        expiringSession.current = true;
+      } catch (error) {
+        event.preventDefault();
+        setSaveMessage(`Could not preserve review before logout: ${error instanceof Error ? error.message : "Browser storage failed."}`);
+      }
+    };
+    window.addEventListener("cms-session-expiring", preserve);
+    return () => window.removeEventListener("cms-session-expiring", preserve);
+  }, [recoveryKey, form, form.formState.isDirty]);
 
   useEffect(() => {
     if (article && !form.formState.isDirty) {
@@ -135,6 +176,13 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     const changedDuringSave = JSON.stringify({ ...current, id: undefined, expectedUpdatedAt: undefined }) !== JSON.stringify({ ...snapshot, id: undefined, expectedUpdatedAt: undefined });
     if (!changedDuringSave) {
       form.reset({ ...snapshot, id: result.id, expectedUpdatedAt: result.updatedAt });
+      if (recoveryKey) {
+        try { sessionStorage.removeItem(recoveryKey); } catch (error) {
+          setSaveMessage(`Review saved, but recovery cleanup failed: ${error instanceof Error ? error.message : "Browser storage failed."}`);
+          saveRef.current = false;
+          return;
+        }
+      }
     }
     setSaveMessage(changedDuringSave ? "Saving newer changes…" : "All changes saved");
     if (!changedDuringSave && !article && typeof window !== "undefined" && window.location.pathname.endsWith("/new")) {
@@ -145,7 +193,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
       queuedRef.current = false;
       window.setTimeout(() => void persistRef.current(), 0);
     }
-  }, [article, form, router]);
+  }, [article, form, router, recoveryKey]);
 
   useEffect(() => {
     persistRef.current = persist;
@@ -161,6 +209,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   useEffect(() => {
     if (!form.formState.isDirty) return;
     const warnBeforeLeave = (event: BeforeUnloadEvent) => {
+      if (expiringSession.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -215,6 +264,20 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   };
 
   return <>
+    {recovery && <section className="cms-alert" role="alert">
+      <p>Unsaved review edits from an expired session are available in this tab. Restore them only if you want to replace the current editor contents; your saved review is unchanged until you save.</p>
+      <button className="cms-secondary-button" type="button" onClick={() => {
+        form.reset({ ...recovery, id: article?.id, expectedUpdatedAt: article?.updated_at }, { keepDefaultValues: true });
+        setEditorVersion((current) => current + 1);
+        setRecovery(null);
+      }}>Restore unsaved review</button>
+      <button className="cms-secondary-button" type="button" onClick={() => {
+        try {
+          if (recoveryKey) sessionStorage.removeItem(recoveryKey);
+          setRecovery(null);
+        } catch (error) { setSaveMessage(`Could not discard recovery: ${error instanceof Error ? error.message : "Browser storage failed."}`); }
+      }}>Discard recovery</button>
+    </section>}
     <div className="cms-page-heading"><div><span className="cms-overline">REVIEW WORKSPACE · {status.replace("_", " ").toUpperCase()}</span><h1>{article ? "Edit review" : "New review"}</h1><p>The story, the experience, and your verdict belong together. Save before opening linked place or visit records.</p></div><div className="cms-heading-actions"><Link className="cms-secondary-button" href="/admin/reviews">Back to reviews</Link>{article && <Link className="cms-secondary-button" href={`/admin/reviews/${article.id}/preview`}>Private preview</Link>}{article && role !== "contributor" && <Link className="cms-secondary-button" href={`/admin/visits/new?review=${article.id}`}>Record this visit</Link>}{article && (role === "owner" || role === "editor") && <DeleteArticleButton id={article.id} />}</div></div>
     {visits.length > 0 && <section className="cms-panel cms-panel-body" aria-label="Visits for this review"><h2>Visits and receipts</h2>{visits.map((visit) => <p key={visit.id}><Link href={`/admin/visits/${visit.id}/edit`}>Edit visit from {visit.visited_at}</Link></p>)}</section>}
     <div className="cms-editor-layout">
@@ -245,14 +308,14 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
               <InputField className="cms-form-span" label="Best for" maxLength={240} placeholder="e.g. A relaxed date night" {...form.register("reviewTemplate.bestFor")} />
             </div>
             <section className="cms-review-section"><h2>Our experience</h2><p className="cms-muted">Tell the story of your visit. Existing article text stays here. Insert photos between paragraphs using the media picker.</p>
-              <ReviewRichText label="Article body" content={form.getValues("content")} media={availableMedia} onChange={(content) => form.setValue("content", content, { shouldDirty: true, shouldValidate: true })} />
+              <ReviewRichText key={`body-${editorVersion}`} label="Article body" content={form.getValues("content")} media={availableMedia} onChange={(content) => form.setValue("content", content, { shouldDirty: true, shouldValidate: true })} />
             </section>
             {([
               ["tried", "What we tried", reviewType === "activity" ? "Describe the activities, tickets, or experiences and what they cost." : "Describe the dishes and drinks, prices, and what you thought."],
               ["worthKnowing", "Worth knowing", "Standouts, drawbacks, reservations, parking, and practical tips."],
               ["returnVerdict", "Would we go back?", "Your final recommendation and who you would recommend it to."],
             ] as const).map(([field, label, hint]) => <section className="cms-review-section" key={field}><h2>{label}</h2><p className="cms-muted">{hint} Leave blank to hide this section.</p>
-              <ReviewRichText label={label} content={form.getValues(`reviewTemplate.${field}`) ?? blankDocument} media={availableMedia} onChange={(content) => form.setValue(`reviewTemplate.${field}`, content, { shouldDirty: true, shouldValidate: true })} />
+              <ReviewRichText key={`${field}-${editorVersion}`} label={label} content={form.getValues(`reviewTemplate.${field}`) ?? blankDocument} media={availableMedia} onChange={(content) => form.setValue(`reviewTemplate.${field}`, content, { shouldDirty: true, shouldValidate: true })} />
             </section>)}
           </>}
           {tab === "photos" && <ReviewPhotos media={availableMedia} photos={template.gallery} featuredMediaId={featuredMediaId}

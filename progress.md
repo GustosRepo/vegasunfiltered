@@ -4,6 +4,14 @@ Last updated: 2026-11-02
 
 ## Project snapshot
 
+Admin inactivity implementation: 30-minute server-backed lease, 2-minute
+warning, explicit stay-signed-in renewal, and same-tab review recovery. New
+`20261102000004_admin_idle_sessions.sql` must be applied before deploying this
+code; existing sessions need reauthentication. It has not been applied to the
+hosted project by this workflow. Authenticated timeout/renewal/RLS tests are
+added, but a fresh local attempt still failed before PostgreSQL startup with
+Docker's image-store input/output errors. No Docker reset/prune was performed.
+
 SEO/About update: owner-approved first-person About copy now emphasizes being a
 dad and husband, frustration with expensive Strip-focused coverage, and honest
 value-conscious reviews. No names or social profiles were supplied or invented.
@@ -131,7 +139,7 @@ Most recently verified locally:
 
 - Isolated production build — passed with Next.js 16.4.3 and Cache Components
   enabled, via `npm run test:e2e:public` without personal environment files.
-- `npm run test:e2e:public` — 72 tests passed: desktop/mobile public pages,
+- `npm run test:e2e:public` — 76 tests passed: desktop/mobile public pages,
   legacy section redirects and canonical URLs, discovery files, removed demo
   URLs returning not found, empty feeds without sample cards,
   SEO titles/descriptions/canonicals, PNG share-image dimensions, About copy
@@ -141,6 +149,9 @@ Most recently verified locally:
   internal-link navigation warnings/cancellation. First-save bookkeeping no
   longer triggers an extra save solely from assigning the database ID; navigation
   to the saved review waits until edits made during saving have also saved.
+  Timeout-specific public fixtures verify the final-two-minute warning and
+  same-tab recovery/explicit restoration on desktop and mobile; authenticated
+  renewal, automatic sign-out, and database/RLS tests remain blocked by Docker.
   login styles, signed-out access, score boundaries, review/place types,
   template validation/content preservation, fixed section order, optional-section
   hiding, gallery enlargement/keyboard dismissal, and editor section/photo state

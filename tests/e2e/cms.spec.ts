@@ -1,5 +1,20 @@
 import { test, expect, png, saveForm } from "./fixtures";
 
+test("admin warns before inactivity logout and stay signed in renews the deadline", async ({ ownerPage: page, backend }) => {
+  const { error } = await backend.admin.from("cms_idle_sessions").update({
+    last_active_at: new Date(Date.now() - 29 * 60_000).toISOString(),
+  }).eq("user_id", backend.accounts.owner.id);
+  if (error) throw error;
+  await page.reload();
+  const warning = page.getByRole("alert", { name: "Session timeout warning" });
+  await expect(warning).toBeVisible();
+  await warning.getByRole("button", { name: "Stay signed in" }).click();
+  await expect(warning).not.toBeVisible();
+  const { data, error: loadError } = await backend.admin.from("cms_idle_sessions").select("last_active_at").eq("user_id", backend.accounts.owner.id).single();
+  if (loadError) throw loadError;
+  expect(Date.now() - Date.parse(data.last_active_at)).toBeLessThan(30_000);
+});
+
 test("owner can use every admin section and sign out", async ({ ownerPage: page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

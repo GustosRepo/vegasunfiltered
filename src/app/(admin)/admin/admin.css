@@ -13,6 +13,8 @@
 }
 
 .cms-app { min-height: 100vh; display: flex; color: var(--cms-ink); background: var(--cms-bg); font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.5; }
+.cms-idle-warning { position: fixed; z-index: 100; bottom: 20px; right: 20px; width: min(440px, calc(100vw - 40px)); padding: 20px; border: 2px solid var(--cms-accent); background: white; box-shadow: 0 8px 32px rgb(0 0 0 / .2); }
+.cms-idle-warning p { margin-bottom: 12px; }
 .cms-app * { box-sizing: border-box; }
 .cms-app a { color: inherit; text-decoration: none; }
 .cms-sidebar { position: fixed; z-index: 15; inset: 0 auto 0 0; width: 252px; display: flex; flex-direction: column; padding: 21px 14px 14px; border-right: 1px solid var(--cms-line); background: var(--cms-surface); }

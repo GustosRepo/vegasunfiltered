@@ -94,3 +94,28 @@ test("unchanged review editor can navigate without an unsaved-changes warning", 
   await expect(page).toHaveURL(/\/admin\/reviews$/);
   expect(dialogs).toEqual([]);
 });
+
+test("review edits preserved at session expiry can be explicitly restored after return", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("Notes preserved at timeout.");
+  await page.evaluate(() => window.dispatchEvent(new Event("cms-session-expiring")));
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Restore unsaved review" })).toBeVisible();
+  await page.getByRole("button", { name: "Restore unsaved review" }).click();
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("Notes preserved at timeout.");
+  await expect(page.getByRole("button", { name: "Restore unsaved review" })).toHaveCount(0);
+});
+
+test("inactivity warning appears only during the final two minutes", async ({ page }) => {
+  await page.clock.install({ time: new Date("2099-12-31T23:30:00Z") });
+  await page.goto("/e2e-review-fixture/idle");
+  await expect(page.getByRole("heading", { name: "Session timer test" })).toBeVisible();
+  const warning = page.getByRole("alert", { name: "Session timeout warning" });
+  await expect(warning).toHaveCount(0);
+  await page.clock.fastForward(27 * 60_000);
+  await expect(warning).toHaveCount(0);
+  await page.clock.fastForward(61_000);
+  await expect(warning).toBeVisible();
+  await expect(warning.getByRole("button", { name: "Stay signed in" })).toBeVisible();
+  await expect(warning).toContainText("Unsaved review edits");
+});

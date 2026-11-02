@@ -22,6 +22,7 @@ import {
 import { getAdminIdentity } from "@/lib/admin-auth";
 import { signOut } from "@/app/actions/auth";
 import "./admin.css";
+import { IdleSession } from "@/components/admin/idle-session";
 
 // Session verification must finish before the protected workspace can render.
 export const instant = false;
@@ -67,9 +68,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     );
   }
   if (!identity) redirect("/admin/login");
+  const { data: sessionDeadline, error: deadlineError } = await client.rpc("cms_session_deadline");
+  if (deadlineError) throw new Error(`Could not load session deadline: ${deadlineError.message}`);
+  if (!sessionDeadline) redirect("/admin/login");
+  const deadline = Date.parse(sessionDeadline);
+  if (!Number.isFinite(deadline)) throw new Error("CMS returned an invalid session deadline.");
 
   return (
     <div className="cms-app">
+      <IdleSession initialDeadline={deadline} />
       <aside className="cms-sidebar">
         <Link className="cms-logo" href="/admin" aria-label="Editorial desk overview">
           <span className="cms-logo-mark">VU</span>

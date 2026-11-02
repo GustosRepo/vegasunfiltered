@@ -54,10 +54,12 @@ try {
     const reviewRoute = join(workspace, "src/app/(site)/e2e-review-fixture");
     mkdirSync(join(reviewRoute, "empty"), { recursive: true });
     mkdirSync(join(reviewRoute, "editor"), { recursive: true });
+    mkdirSync(join(reviewRoute, "idle"), { recursive: true });
     cpSync(join(root, "tests/e2e/fixtures/review-page.tsx"), join(reviewRoute, "fixture.tsx"));
     writeFileSync(join(reviewRoute, "page.tsx"), 'export { default } from "./fixture";\n');
     writeFileSync(join(reviewRoute, "empty/page.tsx"), 'export { EmptyReviewTestPage as default } from "../fixture";\n');
     writeFileSync(join(reviewRoute, "editor/page.tsx"), 'export { ReviewEditorTestPage as default } from "../fixture";\n');
+    writeFileSync(join(reviewRoute, "idle/page.tsx"), 'import { Suspense } from "react"; import { IdleSessionTestPage } from "../fixture"; export default function Page() { return <Suspense fallback={<p>Loading timer...</p>}><IdleSessionTestPage /></Suspense>; }\n');
   }
   cpSync(join(root, "node_modules"), join(workspace, "node_modules"), {
     recursive: true, mode: constants.COPYFILE_FICLONE,
