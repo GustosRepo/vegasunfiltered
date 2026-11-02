@@ -103,13 +103,18 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
       queuedRef.current = true;
       return;
     }
-    const snapshot = form.getValues();
+    const snapshot = structuredClone(form.getValues());
+    saveRef.current = true;
     const valid = await form.trigger();
     if (!valid) {
-      setSaveMessage("Complete required fields to save");
+      const validation = articleDraftSchema.safeParse(snapshot);
+      const issue = validation.success ? undefined : validation.error.issues[0];
+      const field = issue?.path.join(".") ?? "Review";
+      const label = field === "title" ? "Headline" : field === "slug" ? "URL slug" : field;
+      setSaveMessage(`Not saved — ${label}: ${field === "slug" ? "Use lowercase words separated by hyphens, for example spring-valley-dinner." : issue?.message ?? "Check required fields."}`);
+      saveRef.current = false;
       return;
     }
-    saveRef.current = true;
     setSaveMessage("Saving…");
     let result: Awaited<ReturnType<typeof saveArticle>>;
     try {
@@ -127,12 +132,12 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     form.setValue("id", result.id, { shouldDirty: false });
     form.setValue("expectedUpdatedAt", result.updatedAt, { shouldDirty: false });
     const current = form.getValues();
-    const changedDuringSave = JSON.stringify({ ...current, expectedUpdatedAt: undefined }) !== JSON.stringify({ ...snapshot, expectedUpdatedAt: undefined });
+    const changedDuringSave = JSON.stringify({ ...current, id: undefined, expectedUpdatedAt: undefined }) !== JSON.stringify({ ...snapshot, id: undefined, expectedUpdatedAt: undefined });
     if (!changedDuringSave) {
       form.reset({ ...snapshot, id: result.id, expectedUpdatedAt: result.updatedAt });
     }
-    setSaveMessage("All changes saved");
-    if (!article && typeof window !== "undefined" && window.location.pathname.endsWith("/new")) {
+    setSaveMessage(changedDuringSave ? "Saving newer changes…" : "All changes saved");
+    if (!changedDuringSave && !article && typeof window !== "undefined" && window.location.pathname.endsWith("/new")) {
       router.replace(`/admin/reviews/${result.id}`);
     }
     saveRef.current = false;
@@ -160,7 +165,22 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warnBeforeLeave);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeave);
+    const warnBeforeNavigation = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+      if (!(link instanceof HTMLAnchorElement) || link.hasAttribute("download") || link.target && link.target !== "_self") return;
+      const destination = new URL(link.href, window.location.href);
+      if (destination.origin !== window.location.origin || destination.pathname === window.location.pathname && destination.search === window.location.search) return;
+      if (!window.confirm("This review has unsaved changes or a save is still in progress. Stay here and wait for “All changes saved” to keep your work. Leave without saving?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("click", warnBeforeNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeLeave);
+      document.removeEventListener("click", warnBeforeNavigation, true);
+    };
   }, [form.formState.isDirty]);
 
   const publish = (targetStatus: "in_review" | "approved" | "published" | "draft" | "archived") => {

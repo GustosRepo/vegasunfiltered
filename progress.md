@@ -131,12 +131,16 @@ Most recently verified locally:
 
 - Isolated production build — passed with Next.js 16.4.3 and Cache Components
   enabled, via `npm run test:e2e:public` without personal environment files.
-- `npm run test:e2e:public` — 67 tests passed: desktop/mobile public pages,
+- `npm run test:e2e:public` — 72 tests passed: desktop/mobile public pages,
   legacy section redirects and canonical URLs, discovery files, removed demo
   URLs returning not found, empty feeds without sample cards,
   SEO titles/descriptions/canonicals, PNG share-image dimensions, About copy
   and structured data,
   public-only AdSense verification metadata without advertising network requests,
+  neighborhood slug normalization, explicit failed-save feedback, and unsaved
+  internal-link navigation warnings/cancellation. First-save bookkeeping no
+  longer triggers an extra save solely from assigning the database ID; navigation
+  to the saved review waits until edits made during saving have also saved.
   login styles, signed-out access, score boundaries, review/place types,
   template validation/content preservation, fixed section order, optional-section
   hiding, gallery enlargement/keyboard dismissal, and editor section/photo state

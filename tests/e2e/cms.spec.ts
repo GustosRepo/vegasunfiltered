@@ -47,6 +47,10 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
   await expect(page).toHaveURL(/\/admin\/reviews\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("status").filter({ hasText: "All changes saved" })).toBeVisible();
   const id = page.url().split("/").pop()!;
+  await page.getByRole("navigation", { name: "CMS navigation", exact: true }).getByRole("link", { name: "Neighborhoods", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Neighborhoods", exact: true })).toBeVisible();
+  await page.getByRole("navigation", { name: "CMS navigation", exact: true }).getByRole("link", { name: "Reviews", exact: true }).click();
+  await page.getByRole("link", { name: `E2E ${backend.slug}`, exact: true }).click();
   await page.reload();
   await expect(page.getByLabel("Headline", { exact: true })).toHaveValue(`E2E ${backend.slug}`);
   await expect(page.getByLabel("Article body", { exact: true })).toContainText("Original reporting");

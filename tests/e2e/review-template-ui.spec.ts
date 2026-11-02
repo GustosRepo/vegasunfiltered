@@ -39,6 +39,7 @@ test("guided editor keeps sections and photo choices when switching tabs", async
   page.on("request", (request) => {
     if (request.headers()["next-action"]) writes.push(request.url());
   });
+
   await page.goto("/e2e-review-fixture/editor");
   await page.getByLabel("Quick verdict", { exact: true }).fill("Our short verdict.");
   await page.getByLabel("Visit date (public, optional)").fill("2026-11-02");
@@ -62,4 +63,34 @@ test("guided editor keeps sections and photo choices when switching tabs", async
   await expect(page.getByLabel("Photo 1 alt text")).toHaveValue("Our dinner");
   await expect(page.getByRole("button", { name: "Add: The dining room", exact: true })).toBeVisible();
   expect(writes).toEqual([]);
+});
+
+test("unsaved review navigation warns and cancelling keeps the writing", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("textbox", { name: "Article body", exact: true }).fill("Keep these unsaved notes.");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Not saved" })).toContainText("Headline");
+  const prompt = page.waitForEvent("dialog");
+  const leaving = page.getByRole("link", { name: "Back to reviews", exact: true }).click();
+  const dialog = await prompt;
+  expect(dialog.type()).toBe("confirm");
+  expect(dialog.message()).toContain("unsaved changes");
+  await dialog.dismiss();
+  await leaving;
+  await expect(page).toHaveURL(/\/e2e-review-fixture\/editor$/);
+  await expect(page.getByRole("textbox", { name: "Article body", exact: true })).toContainText("Keep these unsaved notes.");
+  await page.getByRole("tab", { name: "Photos", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Photo gallery", exact: true })).toBeVisible();
+});
+
+test("unchanged review editor can navigate without an unsaved-changes warning", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  const dialogs: string[] = [];
+  page.on("dialog", async (dialog) => {
+    dialogs.push(dialog.message());
+    await dialog.dismiss();
+  });
+  await page.getByRole("link", { name: "Back to reviews", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/reviews$/);
+  expect(dialogs).toEqual([]);
 });

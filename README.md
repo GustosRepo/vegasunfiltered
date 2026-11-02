@@ -69,6 +69,12 @@ delete the original file. Gallery captions, descriptions, and credits are saved
 with that review; later edits to shared library metadata do not overwrite them.
 Cover/social images continue to use shared library metadata. Save the review
 before opening its private preview or navigating to another admin record.
+Wait for **All changes saved** before leaving. Validation failures explicitly
+show **Not saved** with the field to correct; clicking an internal navigation
+link with unsaved edits asks for confirmation. Browser reload/close uses the
+browser's unsaved-changes warning. These warnings do not recover work already
+discarded and are not a guarantee against browser crashes or back-button
+navigation. Saved drafts appear in **Admin → Reviews**, not the public feeds.
 
 Existing reviews keep their original body and public rendering until saved
 through the guided editor; the original body then appears under **Our
