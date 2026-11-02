@@ -204,7 +204,7 @@ async function NeighborhoodSection() {
     <section className="cms-panel"><div className="cms-panel-header"><h2>Add neighborhood</h2></div><div className="cms-panel-body">
       <FormWithFeedback action={saveNeighborhood} className="cms-form-grid">
         <Field label="Name" name="name" required defaultValue="" />
-        <Field label="Slug" name="slug" required defaultValue="" />
+        <Field label="Slug" name="slug" required defaultValue="" help="Example: spring-valley. Spaces, underscores, and capitals are converted automatically when saved." />
         <Field label="SEO title" name="seoTitle" defaultValue="" />
         <Field label="Meta description" name="metaDescription" defaultValue="" />
         <Field label="Local description" name="description" multiline className="cms-form-span" defaultValue="" />
@@ -214,7 +214,7 @@ async function NeighborhoodSection() {
       <div className="cms-panel-body cms-neighborhood-grid">{data?.map((item) => <FormWithFeedback action={saveNeighborhood} className="cms-neighborhood-card" key={item.id}>
         <input name="id" type="hidden" value={item.id} />
         <Field label="Name" name="name" required defaultValue={item.name} />
-        <Field label="Slug" name="slug" required defaultValue={item.slug} />
+        <Field label="Slug" name="slug" required defaultValue={item.slug} help="Example: spring-valley. Spaces, underscores, and capitals are converted automatically when saved." />
         <Field label="SEO title" name="seoTitle" defaultValue={item.seo_title ?? ""} />
         <Field label="Meta description" name="metaDescription" defaultValue={item.meta_description ?? ""} />
         <Field label="Local description" name="description" multiline defaultValue={item.description} />

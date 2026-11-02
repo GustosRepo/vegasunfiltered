@@ -47,6 +47,11 @@ npm run build
 
 ### Guided review format and photos
 
+Neighborhood slugs accept names such as `Spring Valley` and normalize spaces,
+underscores, accents, and capitals to URL-safe text such as `spring-valley`
+when saved. Other unsupported punctuation produces an actionable validation
+message; duplicate names/slugs are still rejected.
+
 The review editor uses one shared format for restaurants and activities:
 cover/title/disclosure, quick verdict, at-a-glance facts, our experience,
 what we tried, worth knowing, would we go back, and a photo gallery.

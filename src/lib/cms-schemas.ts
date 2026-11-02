@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+export const neighborhoodSchema = z.object({
+  id: z.union([z.literal(""), z.string().uuid()]).optional(),
+  name: z.string().trim().min(2).max(100),
+  slug: z.string().trim()
+    .transform((value) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""))
+    .pipe(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Enter a neighborhood slug using letters, numbers, and hyphens, for example spring-valley. Spaces and capitals are converted automatically.")),
+  description: z.string().trim().max(3000),
+  seoTitle: z.string().trim().max(70),
+  metaDescription: z.string().trim().max(180),
+});
+
 const allowedNodes = new Set([
   "doc",
   "paragraph",

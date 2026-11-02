@@ -1,7 +1,21 @@
 import { test, expect } from "@playwright/test";
-import { articleDraftSchema, isEditorDocument, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
+import { articleDraftSchema, isEditorDocument, neighborhoodSchema, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
 import { migrateSection, reviewSection } from "../../src/lib/content";
 import { blankReviewDocument, blankReviewTemplate, hasReviewContent, readReviewTemplate, reviewPlainText, withReviewTemplate } from "../../src/lib/review-template";
+
+test("neighborhood slugs normalize common input and explain unsupported characters", () => {
+  const slug = neighborhoodSchema.shape.slug;
+  for (const [input, expected] of [
+    ["Spring Valley", "spring-valley"], ["  Arts_District  ", "arts-district"],
+    ["--Downtown---Las Vegas--", "downtown-las-vegas"], ["Café", "cafe"],
+    ["spring-valley", "spring-valley"], ["District 1", "district-1"],
+  ]) expect(slug.parse(input)).toBe(expected);
+  for (const input of ["", "  ", "---", "!!!", "Spring/Valley", "Vegas?"]) {
+    const result = slug.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].message).toContain("Enter a neighborhood slug");
+  }
+});
 
 test("editorial scores are optional, accept boundaries, and reject invalid precision", () => {
   const score = articleDraftSchema.shape.overallScore;

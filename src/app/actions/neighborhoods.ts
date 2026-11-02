@@ -1,21 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { requireCmsRole } from "@/lib/admin-auth";
-
-const schema = z.object({
-  id: z.union([z.literal(""), z.string().uuid()]).optional(),
-  name: z.string().trim().min(2).max(100),
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  description: z.string().trim().max(3000),
-  seoTitle: z.string().trim().max(70),
-  metaDescription: z.string().trim().max(180),
-});
+import { neighborhoodSchema } from "@/lib/cms-schemas";
 
 export async function saveNeighborhood(input: unknown) {
   if (input instanceof FormData) input = Object.fromEntries(input.entries());
-  const parsed = schema.safeParse(input);
+  const parsed = neighborhoodSchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check neighborhood details." };
   const { client, identity } = await requireCmsRole(["owner", "editor"]);
   const values = {
