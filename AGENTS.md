@@ -39,6 +39,11 @@ and disclosures, then related published reviews/category navigation.
   selections. Hide an empty gallery. Do not display placeholder social links.
 - Related links must use real, indexable published reviews, exclude the current
   review, and match its section. Private previews must not fetch public feeds.
+- Use `getArticleCanonicalUrl` for article canonical metadata, social URLs,
+  structured data, and editor previews. Always generate the URL from the
+  production origin, current review type, and slug. There is no editable
+  canonical field. Ignore legacy overrides and clear them on review save;
+  do not reintroduce manual overrides without the owner's explicit request.
 
 Preserve these rules when extending the CMS. Update the shared editor prompts,
 README, and regression coverage if the owner approves a future format change.

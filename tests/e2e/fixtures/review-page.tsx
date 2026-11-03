@@ -1,4 +1,4 @@
-import { CmsPublishedArticle } from "@/components/cms-published-article";
+import { cmsArticleMetadata, CmsPublishedArticle } from "@/components/cms-published-article";
 import { blankReviewDocument, blankReviewTemplate, withReviewTemplate } from "@/lib/review-template";
 import type { PublishedCmsArticle } from "@/lib/cms-content";
 import { ArticleEditor } from "@/components/admin/article-editor";
@@ -35,6 +35,16 @@ const base: PublishedCmsArticle = {
 // Copied into the disposable test app only; never part of the deployed routes.
 export default function ReviewTestPage() {
   return <CmsPublishedArticle article={base} isPreview />;
+}
+
+const canonicalTestArticle = { ...base, canonicalUrl: "https://example.com/old-override", authorName: "Test author", sponsored: false };
+
+export function reviewCanonicalTestMetadata() {
+  return cmsArticleMetadata(canonicalTestArticle);
+}
+
+export function ReviewCanonicalTestPage() {
+  return <CmsPublishedArticle article={canonicalTestArticle} />;
 }
 
 export function EmptyReviewTestPage() {
@@ -79,6 +89,7 @@ function SavedReviewEditor({ status }: { status: string }) {
       id: base.id, title: base.title, slug: base.slug, subtitle: base.subtitle, kind: "restaurant_review",
       category_id: null, featured_media_id: null, content: withReviewTemplate(text("Our firsthand reporting."), template), status, updated_at: base.updatedAt,
       restaurant_id: null, neighborhood_id: null, is_sponsored: false, review_type: "restaurant", overall_score: 8.5, tags: "",
+      seo: { canonical_url: "https://example.com/legacy-original" },
       scheduled_at: status === "scheduled" ? "2099-12-31T23:00:00Z" : null,
     }}
   /></Suspense></main></div>;

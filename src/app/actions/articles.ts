@@ -38,15 +38,6 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
   if (!isEditorDocument(parsed.data.content)) {
     return { ok: false, message: "The article body contains unsupported content." };
   }
-  if (parsed.data.canonicalUrl) {
-    try {
-      if (new URL(parsed.data.canonicalUrl).protocol !== "https:") {
-        return { ok: false, message: "Canonical URLs must use HTTPS." };
-      }
-    } catch {
-      return { ok: false, message: "Enter a valid absolute canonical URL." };
-    }
-  }
 
   const access = await getAdminIdentity();
   if (!access.client || !access.identity) return { ok: false, message: access.accessError ?? "Your CMS session is unavailable. Sign in again before saving; keep this tab open to retain your writing." };
@@ -57,7 +48,7 @@ export async function saveArticle(input: unknown): Promise<CmsActionResult> {
       seo: {
         seo_title: parsed.data.seoTitle,
         meta_description: parsed.data.metaDescription,
-        canonical_url: parsed.data.canonicalUrl,
+        canonical_url: "",
         primary_keyword: parsed.data.primaryKeyword,
         secondary_keywords: parsed.data.secondaryKeywords
           .split(",")
@@ -226,7 +217,6 @@ export async function duplicateArticle(input: string | FormData): Promise<CmsAct
     tags: tagNames.join(", "),
     seoTitle: seo?.seo_title ?? "",
     metaDescription: seo?.meta_description ?? "",
-    canonicalUrl: "",
     primaryKeyword: seo?.primary_keyword ?? "",
     secondaryKeywords: Array.isArray(seo?.secondary_keywords)
       ? seo.secondary_keywords.join(", ")

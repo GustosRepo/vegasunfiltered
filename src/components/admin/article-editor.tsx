@@ -18,7 +18,8 @@ import { MediaUploadForm } from "@/components/admin/media-upload-form";
 import { blankReviewTemplate, readReviewTemplate, reviewSections } from "@/lib/review-template";
 import { InlinePlace, type ReviewPlace } from "@/components/admin/inline-place";
 import { reviewSection } from "@/lib/content";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME } from "@/lib/site";
+import { getArticleCanonicalUrl } from "@/lib/article-canonical";
 
 type Category = { id: string; name: string; slug: string };
 type MediaOption = ReviewMediaOption;
@@ -46,7 +47,7 @@ type Tab = (typeof editorTabs)[number]["id"];
 
 function validationField(path: string): { label: string; tab: Tab } {
   const seoFields: Record<string, string> = {
-    seoTitle: "SEO title", metaDescription: "Meta description", canonicalUrl: "Canonical URL",
+    seoTitle: "SEO title", metaDescription: "Meta description",
     openGraphMediaId: "Social sharing image", primaryKeyword: "Primary keyword",
     secondaryKeywords: "Secondary keywords", internalLinkingNotes: "Internal linking notes",
   };
@@ -85,7 +86,6 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
       tags: article?.tags ?? "",
       seoTitle: initialSeo?.seo_title ?? "",
       metaDescription: initialSeo?.meta_description ?? "",
-      canonicalUrl: initialSeo?.canonical_url ?? "",
       primaryKeyword: initialSeo?.primary_keyword ?? "",
       secondaryKeywords: initialSeo?.secondary_keywords?.join(", ") ?? "",
       internalLinkingNotes: initialSeo?.internal_linking_notes ?? "",
@@ -118,7 +118,6 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const seoTitle = useWatch({ control: form.control, name: "seoTitle" });
   const metaDescription = useWatch({ control: form.control, name: "metaDescription" });
   const subtitle = useWatch({ control: form.control, name: "subtitle" });
-  const canonicalUrl = useWatch({ control: form.control, name: "canonicalUrl" });
   const indexingEnabled = useWatch({ control: form.control, name: "indexingEnabled" });
   const openGraphMediaId = useWatch({ control: form.control, name: "openGraphMediaId" });
   const template = useWatch({ control: form.control, name: "reviewTemplate" }) ?? blankReviewTemplate();
@@ -126,8 +125,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const selectedPlaceId = useWatch({ control: form.control, name: "restaurantId" });
   const status = article?.status ?? "draft";
   const canPublish = role !== "contributor";
-  const defaultUrl = `${SITE_URL}/${reviewSection(reviewType)}/${slug || "review-slug"}`;
-  const previewUrl = canonicalUrl || defaultUrl;
+  const previewUrl = getArticleCanonicalUrl({ categorySlug: reviewSection(reviewType), slug: slug || "review-slug" });
   const previewTitle = seoTitle || (title ? `${title} | ${SITE_NAME}` : "Review title preview");
   const previewDescription = metaDescription || subtitle;
   const sharingImage = availableMedia.find((item) => item.id === (openGraphMediaId || featuredMediaId));
@@ -394,7 +392,6 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
               <InputField className="cms-form-span" label="SEO title" maxLength={70} placeholder={title ? `${title} | ${SITE_NAME}` : "Uses your headline when left blank"} help={`${seoTitle.length}/70 characters. Leave blank to use the headline and site name.`} error={form.formState.errors.seoTitle?.message} {...form.register("seoTitle")} />
               <label className="cms-field cms-form-span"><span className="cms-label">Meta description</span><textarea aria-label="Meta description" maxLength={180} placeholder="A concise, honest summary of what readers will learn." {...form.register("metaDescription")} /><small>{metaDescription.length}/180 characters. Leave blank to use the subtitle.</small>{form.formState.errors.metaDescription && <small className="cms-form-error">{form.formState.errors.metaDescription.message}</small>}</label>
               <div className="cms-form-span cms-seo-preview" aria-label="Search result preview"><small>SEARCH RESULT PREVIEW</small><b>{previewTitle}</b><span className="cms-seo-url">{previewUrl}</span><p>{previewDescription || "Add a description or subtitle to preview the search summary."}</p><small>Search engines may display a different title or summary.</small></div>
-              <InputField className="cms-form-span" label="Canonical URL (HTTPS)" type="url" placeholder={defaultUrl} help={`Optional. Leave blank to use ${defaultUrl}. Only override this when another URL is the original version.`} error={form.formState.errors.canonicalUrl?.message} {...form.register("canonicalUrl")} />
               <label className="cms-field cms-form-span"><span className="cms-label">Social sharing image</span><select aria-label="Social sharing image" {...form.register("openGraphMediaId")}><option value="">Use featured image</option>{availableMedia.map((item) => <option key={item.id} value={item.id}>{item.altText || item.caption || item.id}</option>)}</select><small>Uses the featured image when no separate social image is selected.</small></label>
               {sharingImage && <div className="cms-social-preview cms-form-span"><Image src={sharingImage.url} alt={sharingImage.altText || "Selected social sharing image"} width={160} height={84} unoptimized /><span>{sharingImage.altText || sharingImage.caption || "Selected sharing image"}</span></div>}
               <InputField label="Primary keyword" maxLength={100} help="Your main topic for editorial planning." error={form.formState.errors.primaryKeyword?.message} {...form.register("primaryKeyword")} />

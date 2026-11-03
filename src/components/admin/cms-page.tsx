@@ -16,7 +16,6 @@ import { RestaurantDirectory } from "@/components/admin/restaurant-directory";
 import { saveAffiliateLink, setAffiliateLinkActive } from "@/app/actions/affiliate-links";
 import { reviewSection } from "@/lib/content";
 import { reviewPlainText } from "@/lib/review-template";
-import { articleDraftSchema } from "@/lib/cms-schemas";
 import { SITE_NAME } from "@/lib/site";
 import { saveEditorialProfile } from "@/app/actions/profile";
 
@@ -288,7 +287,6 @@ async function SeoAudit() {
     else if (seo?.meta_description && seo.meta_description.length > 180) addIssue(`Meta description exceeds the editor's 180-character limit`);
     if (effectiveDescription?.trim() && descriptionCounts.get(effectiveDescription.trim().toLowerCase())! > 1) addIssue("Search description is duplicated");
     if (slugCounts.get(article.slug.toLowerCase())! > 1) addIssue("URL slug is duplicated", "content");
-    if (!articleDraftSchema.shape.canonicalUrl.safeParse(seo?.canonical_url ?? "").success) addIssue("Canonical URL must be a valid HTTPS URL");
     if (!article.featured_media_id) addIssue("Featured image is missing", "photos");
     else if (!featured?.alt_text?.trim()) checks.push({ message: "Featured image is missing alt text", href: "/admin/media" });
     if (!author?.display_name?.trim()) checks.push({ message: "Author attribution is missing", href: author?.id === access.identity.id ? "/admin/settings#author-profile" : "/admin/team" });

@@ -2,6 +2,27 @@
 
 Last updated: 2026-11-03
 
+## Canonical URL repair (November 3)
+
+- Cleared the manually saved `https://vegasunfiltered.com/tacos-el-gordo`
+  canonical override on the published Tacos El Gordo review. The old root-level
+  URL returned 404. Only this confirmed SEO setting was changed in the hosted
+  database; article text, status, and other SEO fields were preserved.
+- Verified the live restaurant page returns HTTP 200 and now emits
+  `https://vegasunfiltered.com/restaurants/tacos-el-gordo` in its canonical link,
+  Open Graph URL, and article schema's `mainEntityOfPage`.
+- Removed the manual canonical field and draft input. A shared resolver now
+  generates canonical metadata, social URLs, article schema, and editor previews
+  from the review's current type and slug. Legacy overrides (including external
+  ones) are ignored and cleared on save. Older form submissions cannot reinstate
+  them. README and AGENTS document automatic URLs as the permanent policy.
+- Validation: isolated production build, TypeScript, whitespace checks, and all
+  101 public/editor/model tests passed, including desktop/mobile assertions that
+  the manual field is absent, preview URLs follow type/slug changes, and metadata,
+  social URL, and article schema agree despite old overrides.
+- The saved setting is fixed live. The preventive application changes are
+  local and require the next code deployment; no deployment was performed here.
+
 ## Shared article layout (November 3)
 
 - Existing and future restaurant/activity reviews and private previews now use

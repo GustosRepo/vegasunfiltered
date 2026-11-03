@@ -215,11 +215,6 @@ export const articleDraftSchema = z.object({
   tags: z.string().max(500),
   seoTitle: z.string().trim().max(70),
   metaDescription: z.string().trim().max(180),
-  canonicalUrl: z.string().trim().max(2048).refine((value) => {
-    if (!value) return true;
-    try { return new URL(value).protocol === "https:"; }
-    catch { return false; }
-  }, "Enter a valid HTTPS URL, or leave blank to use the review's own URL."),
   primaryKeyword: z.string().trim().max(100),
   secondaryKeywords: z.string().max(500),
   internalLinkingNotes: z.string().max(5000),

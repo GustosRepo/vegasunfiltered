@@ -25,11 +25,34 @@ test("SEO preview follows the review type, metadata fallbacks and social image s
   await page.getByRole("tab", { name: "SEO", exact: true }).click();
   await expect(preview).toContainText("https://vegasunfiltered.com/activities/our-evening");
   await expect(page.getByLabel("Primary keyword", { exact: true })).toHaveValue("Las Vegas evening");
-  await page.getByLabel("Canonical URL (HTTPS)", { exact: true }).fill("https://example.com/original");
-  await expect(preview).toContainText("https://example.com/original");
+  await expect(page.getByLabel(/Canonical URL/)).toHaveCount(0);
+  await page.getByRole("tab", { name: "Content", exact: true }).click();
+  await page.getByLabel("URL slug", { exact: true }).fill("another-evening");
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  await expect(preview).toContainText("https://vegasunfiltered.com/activities/another-evening");
   await page.getByLabel(/Allow search engines/).check();
   await expect(page.getByText(/Once published, this review can appear/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("canonical, social URL and article schema agree on the current review URL despite a stale override", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/canonical");
+  const expected = "https://vegasunfiltered.com/restaurants/test-only-review";
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", expected);
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", expected);
+  const schemas = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const article = schemas.map((value) => JSON.parse(value)).find((value) => value["@type"] === "BlogPosting");
+  expect(article.mainEntityOfPage).toBe(expected);
+  expect(article["@id"]).toBe(`${expected}#article`);
+});
+
+test("existing reviews show an automatic URL without exposing or using their saved overrides", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor-published");
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  await expect(page.getByLabel(/Canonical URL/)).toHaveCount(0);
+  await expect(page.getByLabel("Search result preview")).toContainText("https://vegasunfiltered.com/restaurants/test-only-review");
+  await expect(page.getByLabel("Search result preview")).not.toContainText("example.com");
 });
 
 test("save and publishing validation opens the tab containing the invalid field", async ({ page }) => {
@@ -42,14 +65,17 @@ test("save and publishing validation opens the tab containing the invalid field"
   await expect(page.getByLabel("Headline", { exact: true })).toBeFocused();
   await page.getByLabel("Headline", { exact: true }).fill("Our evening review");
   await page.getByRole("tab", { name: "SEO", exact: true }).click();
-  await page.getByLabel("Canonical URL (HTTPS)", { exact: true }).fill("http://example.com/original");
+  const seoTitle = page.getByLabel("SEO title", { exact: true });
+  // Exercise server/form validation beyond the browser's length guard.
+  await seoTitle.evaluate((element) => element.removeAttribute("maxlength"));
+  await seoTitle.fill("x".repeat(71));
   await page.getByRole("tab", { name: "Content", exact: true }).click();
   await page.getByLabel("URL slug", { exact: true }).fill("our-evening");
   await page.getByRole("tab", { name: "Publishing", exact: true }).click();
   await page.getByRole("button", { name: "Submit for review", exact: true }).click();
   await expect(page.getByRole("tab", { name: "SEO", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByLabel("Canonical URL (HTTPS)", { exact: true })).toHaveAttribute("aria-invalid", "true");
-  await expect(page.locator(".cms-form-error")).toContainText("valid HTTPS URL");
+  await expect(page.getByLabel("SEO title", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(".cms-form-error")).toContainText("70");
   expect(writes).toEqual([]);
 });
 

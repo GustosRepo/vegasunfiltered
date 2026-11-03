@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { articleDraftSchema, isEditorDocument, neighborhoodSchema, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
 import { migrateSection, reviewSection } from "../../src/lib/content";
+import { getArticleCanonicalUrl } from "../../src/lib/article-canonical";
 import { blankReviewDocument, blankReviewTemplate, hasReviewContent, quickVerdictPreview, readReviewTemplate, reviewPlainText, withoutRepeatedSectionLabel, withReviewTemplate } from "../../src/lib/review-template";
 
 test("neighborhood slugs normalize common input and explain unsupported characters", () => {
@@ -43,6 +44,25 @@ test("legacy sections retain their review destinations", () => {
   expect(reviewSection("activity")).toBe("activities");
   for (const value of ["eat", "drink"] as const) expect(migrateSection(value)).toBe("restaurants");
   for (const value of ["explore", "save", "stories"] as const) expect(migrateSection(value)).toBe("activities");
+});
+
+test("review canonicals always use the current type and slug, ignoring all legacy overrides", () => {
+  const article = { categorySlug: "restaurants" as const, slug: "tacos-el-gordo" };
+  const expected = "https://vegasunfiltered.com/restaurants/tacos-el-gordo";
+  for (const canonicalUrl of [
+    "", undefined, null,
+    "https://vegasunfiltered.com/tacos-el-gordo",
+    "https://www.vegasunfiltered.com/tacos-el-gordo/",
+    "https://vegasunfiltered.com/eat/tacos-el-gordo",
+    "https://vegasunfiltered.com/activities/tacos-el-gordo",
+    "https://vegasunfiltered.com/restaurants/tacos-el-gordo?source=test#review",
+    "https://example.com/original", "not a URL",
+  ]) {
+    const legacyArticle = { ...article, canonicalUrl };
+    expect(getArticleCanonicalUrl(legacyArticle)).toBe(expected);
+  }
+  expect(getArticleCanonicalUrl({ categorySlug: "activities", slug: "our-evening" }))
+    .toBe("https://vegasunfiltered.com/activities/our-evening");
 });
 
 test("review template preserves legacy body and round-trips optional sections", () => {

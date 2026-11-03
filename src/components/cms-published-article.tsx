@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import type { PublishedCmsArticle } from "@/lib/cms-content";
-import { SITE_NAME, SITE_SHARE_IMAGE, SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_SHARE_IMAGE } from "@/lib/site";
 import { CmsReviewContent, ReviewDetails, ReviewJumpLinks, ReviewQuickVerdict } from "@/components/cms-review-content";
 import { readReviewTemplate } from "@/lib/review-template";
 import { isEditorDocument } from "@/lib/cms-schemas";
@@ -10,9 +10,10 @@ import { TheReceipt } from "@/components/the-receipt";
 import { BreadcrumbJsonLd, CmsArticleJsonLd, CmsRestaurantJsonLd } from "@/components/json-ld";
 import { AffiliateDisclosure, SponsoredContentLabel } from "@/components/monetization";
 import { ReviewScore } from "@/components/review-score";
+import { getArticleCanonicalUrl } from "@/lib/article-canonical";
 
 export function cmsArticleMetadata(article: PublishedCmsArticle): Metadata {
-  const canonical = article.canonicalUrl || `${SITE_URL}/${article.categorySlug}/${article.slug}`;
+  const canonical = getArticleCanonicalUrl(article);
   return {
     title: { absolute: article.seoTitle || `${article.title} | ${SITE_NAME}` },
     description: article.metaDescription || article.subtitle || undefined,

@@ -122,7 +122,8 @@ facts, separate from private visit records and their explicit sharing opt-in.
 once after the three earlier migrations. Do not rerun the original table-creation
 migrations. The new migration preserves IDs, content, visits, media, and roles;
 adds optional scoring and place/review types; and updates canonical URLs that
-match the old site routes. Custom canonical URLs are left untouched.
+match the old site routes. The migration leaves stored custom canonical values
+untouched; the current public renderer uses automatic review URLs instead.
 
 Existing linked-place reviews stay restaurant reviews. Otherwise, experience
 reviews and old Explore/Save/Stories articles move to Activities; other articles
@@ -216,8 +217,13 @@ applying migration 06; signing in again alone cannot fix this SQL name collision
 
 The review editor includes Content, Photos, SEO, and Publishing tabs. The SEO
 preview follows the restaurant/activity URL, falls back to the headline/site
-name and subtitle, and shows the selected social sharing image. A blank canonical
-URL uses the review's own URL. Keywords and internal linking notes are private
+name and subtitle, and shows the selected social sharing image. Canonical URLs
+are fully automatic: every review uses its current `/restaurants/slug` or
+`/activities/slug` URL in metadata, social sharing, article structured data, and
+the editor preview. There is no canonical input. Old saved overrides are ignored
+and cleared on the next review save. Changing the review type or slug updates
+the generated URL automatically; no database migration is needed.
+Keywords and internal linking notes are private
 editorial planning fields; add actual links in the review text. SEO audit links
 open the relevant editor tab, Media library, or author settings. Saving or
 changing status reveals the tab containing an invalid field. Set your public
@@ -339,7 +345,7 @@ the editorial profile. Then sign in again to refresh the session's role claim.
 Do not grant roles through user-editable metadata or put account credentials
 in environment files.
 
-The SEO audit checks configured article titles, descriptions, canonicals, and
+The SEO audit checks configured article titles, descriptions, and
 indexing flags; it is not an external crawler. Analytics cards are connection
 status only, not reports. No analytics connector or tracking script is enabled.
 

@@ -1,6 +1,7 @@
 import type { Story } from "@/lib/content";
 import type { PublishedCmsArticle } from "@/lib/cms-content";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_SHARE_IMAGE, SITE_URL } from "@/lib/site";
+import { getArticleCanonicalUrl } from "@/lib/article-canonical";
 
 function serialize(data: Record<string, unknown>) {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -202,7 +203,7 @@ export function CmsArticleJsonLd({ article }: { article: PublishedCmsArticle }) 
           headline: article.title,
           description: article.metaDescription || article.subtitle,
           image: new URL(article.openGraphImage || article.image || SITE_SHARE_IMAGE.url, SITE_URL).href,
-          mainEntityOfPage: article.canonicalUrl || url,
+          mainEntityOfPage: getArticleCanonicalUrl(article),
           datePublished: article.publishedAt,
           dateModified: article.updatedAt,
           author: { "@type": "Person", name: article.authorName },
