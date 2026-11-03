@@ -97,6 +97,9 @@ test("publishing controls match live, scheduled, archived and approved review st
   await expect(page.getByText("Saving changes updates the live review immediately.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Unpublish", exact: true })).toBeVisible();
   await page.goto("/e2e-review-fixture/editor-scheduled");
+  await expect(page.getByLabel("Schedule for (Las Vegas time)")).toHaveValue("2099-12-31T15:00");
+  await expect(page.getByRole("button", { name: "Schedule", exact: true })).toBeEnabled();
+  await expect(page.getByText(/which can be up to an hour later/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Archive", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Publish now", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cancel schedule and return to draft", exact: true })).toBeVisible();
@@ -105,7 +108,25 @@ test("publishing controls match live, scheduled, archived and approved review st
   await page.goto("/e2e-review-fixture/editor-approved");
   await expect(page.getByRole("button", { name: "Publish now", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Schedule", exact: true })).toBeDisabled();
+  await expect(page.getByLabel("Schedule for (Las Vegas time)")).toBeDisabled();
   await expect(page.getByText(/Automatic publishing is unavailable/)).toBeVisible();
+  await expect(page.getByText(/Configure CRON_SECRET and SUPABASE_SERVICE_ROLE_KEY/)).toBeVisible();
+});
+
+test("indexing can be changed in Publishing and stays in sync with SEO", async ({ page }) => {
+  // The blank headline prevents the editor fixture from sending database writes.
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("tab", { name: "Publishing", exact: true }).click();
+  const indexing = page.getByLabel("Allow search engines to index this article once published");
+  await expect(indexing).not.toBeChecked();
+  await indexing.check();
+  await expect(page.getByText(/Google decides when to index it/)).toBeVisible();
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  await expect(indexing).toBeChecked();
+  await indexing.uncheck();
+  await page.getByRole("tab", { name: "Publishing", exact: true }).click();
+  await expect(indexing).not.toBeChecked();
+  await expect(page.getByText(/this review is marked noindex/)).toBeVisible();
 });
 
 test("structured review uses a fixed section order, preserves scores and expands gallery photos", async ({ page }) => {

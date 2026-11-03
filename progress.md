@@ -2,6 +2,25 @@
 
 Last updated: 2026-11-03
 
+## Publishing controls and saved schedules (November 3)
+
+- Publishing now exposes the same indexing checkbox as SEO and explains that
+  search eligibility does not guarantee Google's inclusion of a published review.
+- Existing schedules reopen with their saved Las Vegas date/time. A shared
+  conversion helper handles winter/summer offsets and rejects invalid calendar
+  dates and clock times skipped by daylight saving.
+- Disabled scheduling explains the required hosting credentials and deployed
+  hourly job. Local inspection found CRON_SECRET missing and the Supabase service
+  key present; production configuration could not be inspected from this checkout.
+  The owner confirmed the date field or Schedule button is disabled, matching
+  the missing-credentials guard. The hosting environment still needs verification.
+- Added desktop/mobile indexing synchronization and saved-schedule coverage, plus
+  date-conversion checks. TypeScript, targeted lint, whitespace checks, the isolated
+  production build, and all 119 public/editor/model/config/advertising tests passed.
+  The authenticated database publishing suite and production cron were not run.
+- Changes are local. Enabling automatic production scheduling still requires
+  hosting configuration and deployment; no live publication status was changed.
+
 ## Homepage responsive ad unit (November 3)
 
 - Added the owner-supplied responsive Display unit `8538710734` after Our latest

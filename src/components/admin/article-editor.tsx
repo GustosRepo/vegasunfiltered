@@ -20,6 +20,7 @@ import { InlinePlace, type ReviewPlace } from "@/components/admin/inline-place";
 import { reviewSection } from "@/lib/content";
 import { SITE_NAME } from "@/lib/site";
 import { getArticleCanonicalUrl } from "@/lib/article-canonical";
+import { publicationLocalTime } from "@/lib/publication-time";
 
 type Category = { id: string; name: string; slug: string };
 type MediaOption = ReviewMediaOption;
@@ -103,7 +104,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const availablePlaces = [...createdPlaces, ...restaurants.filter((place) => !createdPlaces.some((created) => created.id === place.id))];
   const [uploads, setUploads] = useState<MediaOption[]>([]);
   const availableMedia = [...uploads, ...media.filter((item) => !uploads.some((upload) => upload.id === item.id))];
-  const [scheduledLocal, setScheduledLocal] = useState("");
+  const [scheduledLocal, setScheduledLocal] = useState(() => publicationLocalTime(article?.scheduled_at));
   const [saveMessage, setSaveMessage] = useState(article ? "All changes saved" : "New draft");
   const [transitionMessage, setTransitionMessage] = useState("");
   const [isTransitioning, startTransition] = useTransition();
@@ -405,12 +406,13 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
             <p className="cms-muted">Save your review, submit it for review, then approve it before publishing. Each action saves your latest edits first.</p>
             <div className="cms-alert">Review status: <b>{status.replace("_", " ")}</b>.</div>
             {canPublish && !selectedPlaceId && <p className="cms-alert">Before publishing or scheduling, choose a matching place in Content. You can save and submit an unlinked draft.</p>}
-            <p className="cms-muted">{indexingEnabled ? "Search indexing is enabled for publication." : "Search indexing is off. Enable it in SEO to include the published review in search and public listings."}</p>
+            <label className="cms-checkbox-field"><input type="checkbox" {...form.register("indexingEnabled")} /> Allow search engines to index this article once published</label>
+            <p className="cms-muted">{indexingEnabled ? "After publication, this review is eligible for search and included in site listings and the sitemap. Google decides when to index it." : "After publication, this review is marked noindex and excluded from site listings and the sitemap. Its direct URL stays public."} Save changes to apply this setting.</p>
             {status === "published" && <p className="cms-alert">Saving changes updates the live review immediately.</p>}
             {status === "scheduled" && article?.scheduled_at && <p>Scheduled for {new Date(article.scheduled_at).toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" })} (Las Vegas time).</p>}
             {canPublish && (status === "approved" || status === "scheduled") && <>
-              <label className="cms-field"><span className="cms-label">Schedule for (Las Vegas time)</span><input disabled={!schedulingConfigured} onChange={(event) => setScheduledLocal(event.target.value)} type="datetime-local" value={scheduledLocal} /></label>
-              <p className="cms-muted">{schedulingConfigured ? "Scheduled reviews publish on the first hourly publishing run after the selected time." : "Automatic publishing is unavailable in this environment. You can publish an approved review manually."}</p>
+              <label className="cms-field"><span className="cms-label">Schedule for (Las Vegas time)</span><input aria-describedby="schedule-help" disabled={!schedulingConfigured} onChange={(event) => setScheduledLocal(event.target.value)} type="datetime-local" value={scheduledLocal} /></label>
+              <p className="cms-muted" id="schedule-help">{schedulingConfigured ? "All dates use Las Vegas time, regardless of your device time zone. Scheduled reviews publish on the first hourly publishing run after the selected time, which can be up to an hour later." : "Automatic publishing is unavailable in this environment. Configure CRON_SECRET and SUPABASE_SERVICE_ROLE_KEY in the hosting environment, then redeploy with the hourly publishing job enabled. You can still use Publish now for an approved review."}</p>
             </>}
             <div className="cms-heading-actions">
               {status === "draft" && <button className="cms-secondary-button" onClick={() => publish("in_review")} type="button">Submit for review</button>}

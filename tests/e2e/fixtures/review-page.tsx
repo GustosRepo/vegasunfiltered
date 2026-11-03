@@ -121,9 +121,9 @@ export function ReviewEditorTestPage() {
   </main></div>;
 }
 
-function SavedReviewEditor({ status }: { status: string }) {
+function SavedReviewEditor({ status, schedulingConfigured = false }: { status: string; schedulingConfigured?: boolean }) {
   return <div className="cms-app"><main className="cms-content"><Suspense fallback={<p>Loading review editor...</p>}><ArticleEditor
-    categories={[]} media={[]} restaurants={[]} neighborhoods={[]} role="owner" initialTab="publishing"
+    categories={[]} media={[]} restaurants={[]} neighborhoods={[]} role="owner" initialTab="publishing" schedulingConfigured={schedulingConfigured}
     article={{
       id: base.id, title: base.title, slug: base.slug, subtitle: base.subtitle, kind: "restaurant_review",
       category_id: null, featured_media_id: null, content: withReviewTemplate(text("Our firsthand reporting."), template), status, updated_at: base.updatedAt,
@@ -135,7 +135,7 @@ function SavedReviewEditor({ status }: { status: string }) {
 }
 
 export function PublishedReviewEditorTestPage() { return <SavedReviewEditor status="published" />; }
-export function ScheduledReviewEditorTestPage() { return <SavedReviewEditor status="scheduled" />; }
+export function ScheduledReviewEditorTestPage() { return <SavedReviewEditor status="scheduled" schedulingConfigured />; }
 export function ArchivedReviewEditorTestPage() { return <SavedReviewEditor status="archived" />; }
 export function ApprovedReviewEditorTestPage() { return <SavedReviewEditor status="approved" />; }
 

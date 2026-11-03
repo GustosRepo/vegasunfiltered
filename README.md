@@ -240,6 +240,13 @@ published review updates it live. Archived reviews can return to draft, and a
 scheduled review must be returned to draft before archiving. Scheduling controls
 are available only when the publishing endpoint credentials are configured;
 automatic runs still require the deployed hourly cron.
+The Publishing tab also exposes the indexing checkbox, using the same saved
+setting as SEO. It makes a published page eligible for indexing; it does not
+submit it to Google or guarantee search inclusion. Existing schedules reopen
+with the saved Las Vegas date and time. Click Schedule to apply a date change;
+Save changes saves review content and indexing, not the scheduling date.
+Times skipped by the daylight saving clock change are rejected. Automatic
+publication can occur up to an hour after the selected time with the hourly job.
 
 At timeout, unsaved review form contents are kept in same-tab `sessionStorage`,
 scoped to the signed-in user and review (or new draft). After signing in as the
@@ -286,6 +293,11 @@ as evidence that the migration was applied to hosted Supabase.
    migrations; it also adds the featured-media action, public author and
    affiliate-link reads, and the due-article publishing RPC. Verify a scheduled
    article publishes after its time in the deployed environment.
+   The checked-in hourly expression requires a hosting plan that supports it.
+   [Vercel Hobby only supports daily cron schedules](https://vercel.com/docs/cron-jobs/usage-and-pricing);
+   it cannot run this hourly configuration. Check the deployed plan and Cron
+   executions before relying on automatic publication. The presence of server
+   credentials alone does not verify that the job is running.
 
 Media uploads go directly from the signed-in browser to Supabase Storage.
 Next.js image optimization allows only the configured `NEXT_PUBLIC_SUPABASE_URL`

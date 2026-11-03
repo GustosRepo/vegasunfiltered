@@ -2,7 +2,26 @@ import { test, expect } from "@playwright/test";
 import { articleDraftSchema, isEditorDocument, neighborhoodSchema, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
 import { migrateSection, reviewSection } from "../../src/lib/content";
 import { getArticleCanonicalUrl } from "../../src/lib/article-canonical";
+import { parsePublicationTime, publicationLocalTime } from "../../src/lib/publication-time";
 import { blankReviewDocument, blankReviewTemplate, hasReviewContent, hasSubstantialReviewExperience, quickVerdictPreview, readReviewTemplate, reviewPlainText, withoutRepeatedSectionLabel, withReviewTemplate } from "../../src/lib/review-template";
+
+test("publication dates round-trip in Las Vegas time in winter and summer", () => {
+  for (const [local, utc] of [
+    ["2027-01-15T10:30", "2027-01-15T18:30:00.000Z"],
+    ["2027-07-15T10:30", "2027-07-15T17:30:00.000Z"],
+  ]) {
+    expect(parsePublicationTime(local)?.toISOString()).toBe(utc);
+    expect(publicationLocalTime(utc)).toBe(local);
+  }
+  expect(publicationLocalTime(null)).toBe("");
+  expect(publicationLocalTime("invalid")).toBe("");
+});
+
+test("publication dates reject invalid calendar dates and skipped daylight saving times", () => {
+  for (const input of ["", "invalid", "2027-02-30T10:00", "2027-03-14T02:30", "2027-01-15T25:00", "2027-01-15T10:30Z"]) {
+    expect(parsePublicationTime(input)).toBeNull();
+  }
+});
 
 test("neighborhood slugs normalize common input and explain unsupported characters", () => {
   const slug = neighborhoodSchema.shape.slug;

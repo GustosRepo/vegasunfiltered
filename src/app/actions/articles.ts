@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { fromZonedTime } from "date-fns-tz";
 import { z } from "zod";
 import { getAdminIdentity, requireCmsRole, type CmsRole } from "@/lib/admin-auth";
 import { withReviewTemplate } from "@/lib/review-template";
+import { parsePublicationTime } from "@/lib/publication-time";
 import {
   articleDraftSchema,
   isEditorDocument,
@@ -118,11 +118,11 @@ export async function transitionArticle(input: unknown): Promise<CmsActionResult
       return { ok: false, message: "Automatic publishing is not configured in this environment. Publish an approved review manually, or configure scheduled publishing first." };
     }
     const localDateTime = parsed.data.scheduledLocal;
-    if (!localDateTime || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localDateTime)) {
+    const converted = localDateTime ? parsePublicationTime(localDateTime) : null;
+    if (!converted) {
       return { ok: false, message: "Choose a valid publication date and time." };
     }
-    const converted = fromZonedTime(localDateTime, "America/Los_Angeles");
-    if (Number.isNaN(converted.getTime()) || converted.getTime() <= Date.now()) {
+    if (converted.getTime() <= Date.now()) {
       return { ok: false, message: "Choose a future time in America/Los_Angeles." };
     }
     scheduledAt = converted.toISOString();
