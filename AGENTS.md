@@ -10,6 +10,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Permanent review layout rules
 
+The owner prefers plain punctuation in article prose. Avoid em/en dash sentence
+breaks and unnecessary hyphenated phrasing; use sentences, commas, or colons.
+Preserve their wording and voice, and never alter URL slugs, IDs, dates, or
+media paths when editing prose punctuation.
+
 All existing and new restaurant/activity articles and private previews must use
 `CmsPublishedArticle` and the shared sections in `src/lib/review-template.ts`.
 Do not create per-slug layouts or a separate format for future articles.
