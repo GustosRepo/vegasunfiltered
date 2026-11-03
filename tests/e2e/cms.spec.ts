@@ -57,7 +57,7 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
   await page.getByLabel("Best for", { exact: true }).fill("Date night");
   await page.getByLabel("Article body", { exact: true }).fill("Original reporting for end-to-end testing. ".repeat(15));
   await page.getByRole("textbox", { name: "What we tried", exact: true }).fill("The seasonal menu and two cocktails.");
-  await page.getByRole("textbox", { name: "Worth knowing", exact: true }).fill("Book ahead for a quiet table.");
+  await page.getByRole("textbox", { name: "Before you go", exact: true }).fill("Book ahead for a quiet table.");
   await page.getByRole("textbox", { name: "Would we go back?", exact: true }).fill("Yes, for our next date night.");
   await expect(page).toHaveURL(/\/admin\/reviews\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("status").filter({ hasText: "All changes saved" })).toBeVisible();

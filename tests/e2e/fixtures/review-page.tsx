@@ -26,9 +26,10 @@ const base: PublishedCmsArticle = {
   categorySlug: "restaurants", categoryName: "Restaurants", reviewType: "restaurant", overallScore: 0, tags: [],
   publishedAt: "2026-11-02T18:00:00Z", updatedAt: "2026-11-02T18:00:00Z",
   content: withReviewTemplate(text("Our original experience and photos stay together."), template),
-  image: "", imageAlt: "", imageCaption: "", openGraphImage: "", seoTitle: "", metaDescription: "", canonicalUrl: "",
-  indexable: false, publicReceiptUrl: null, receipt: null, authorName: null, affiliateLinks: [], restaurant: null,
-  neighborhood: null, sponsored: true,
+  image: "/art/diner.svg", imageAlt: "Review cover", imageCaption: "Our visit", openGraphImage: "", seoTitle: "", metaDescription: "", canonicalUrl: "",
+  indexable: false, publicReceiptUrl: null, receipt: null, authorName: null, affiliateLinks: [],
+  restaurant: { name: "Test restaurant — North branch", address: "123 Example Road", city: "North Las Vegas", state: "NV", postalCode: "89030", cuisine: "Seasonal cooking", website: "https://example.com/menu" },
+  neighborhood: { name: "North Las Vegas", slug: "north-las-vegas", description: "" }, sponsored: true,
 };
 
 // Copied into the disposable test app only; never part of the deployed routes.
@@ -37,7 +38,30 @@ export default function ReviewTestPage() {
 }
 
 export function EmptyReviewTestPage() {
-  return <CmsPublishedArticle article={{ ...base, title: "Empty review", sponsored: false, content: withReviewTemplate(blankReviewDocument(), blankReviewTemplate()) }} isPreview />;
+  return <CmsPublishedArticle article={{ ...base, title: "Empty review", sponsored: false, restaurant: null, neighborhood: null, image: "", content: withReviewTemplate(blankReviewDocument(), blankReviewTemplate()) }} isPreview />;
+}
+
+export function ActivityReviewTestPage() {
+  const activityTemplate = {
+    ...template,
+    quickVerdict: "Worth the trip? Yes, for a relaxed evening.\n\nThe longer explanation stays available without pushing the photo down the page.",
+    tried: { type: "doc", content: [
+      { type: "paragraph", content: [{ type: "text", text: "What We Ordered", marks: [{ type: "bold" }] }] },
+      ...text("The experience itself stays intact.").content,
+    ] },
+    worthKnowing: { type: "doc", content: [
+      { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "One Thing You Should Know Before Going" }] },
+      ...text("Book ahead.").content,
+    ] },
+    gallery: [template.gallery[0], { ...template.gallery[1], url: "/art/diner.svg" }],
+  };
+  return <CmsPublishedArticle article={{ ...base, title: "An evening in Las Vegas: worth the trip?", sponsored: false, reviewType: "activity", categorySlug: "activities", categoryName: "Activities", image: "/icon.svg", content: withReviewTemplate(text("Our firsthand activity review."), activityTemplate) }} relatedReviews={[
+    { id: "another-review", title: "Another evening out", slug: "another-evening", categorySlug: "activities" },
+  ]} />;
+}
+
+export function LegacyReviewTestPage() {
+  return <CmsPublishedArticle article={{ ...base, title: "Legacy review!", sponsored: false, overallScore: null, content: text("The original review is preserved without a structured template.") }} isPreview />;
 }
 
 export function ReviewEditorTestPage() {

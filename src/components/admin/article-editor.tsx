@@ -15,7 +15,7 @@ import { DeleteArticleButton } from "@/components/admin/destructive-action";
 import { ReviewRichText, type ReviewMediaOption } from "@/components/admin/review-rich-text";
 import { ReviewPhotos } from "@/components/admin/review-photos";
 import { MediaUploadForm } from "@/components/admin/media-upload-form";
-import { blankReviewTemplate, readReviewTemplate } from "@/lib/review-template";
+import { blankReviewTemplate, readReviewTemplate, reviewSections } from "@/lib/review-template";
 import { InlinePlace, type ReviewPlace } from "@/components/admin/inline-place";
 import { reviewSection } from "@/lib/content";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -342,9 +342,9 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
           <fieldset className="cms-editor-fields" disabled={isTransitioning}>
           <div id={`${editorId}-panel`} role="tabpanel" aria-labelledby={`${editorId}-tab-${tab}`}>
           {tab === "content" && <>
-            <section className="cms-review-section"><h2>The basics</h2><p className="cms-muted">Identify the visit and the place. Drafts can stay unlinked; publishing requires a matching place.</p>
+            <section className="cms-review-section"><h2>The basics</h2><p className="cms-muted">Every review follows the same format: title and score, quick verdict, cover photo, visit details, full review, additional photos, and more reviews. Identify the exact branch or location. Drafts can stay unlinked; publishing requires a matching place.</p>
             <div className="cms-form-grid">
-              <InputField error={form.formState.errors.title?.message} label="Headline" {...form.register("title")} />
+              <InputField error={form.formState.errors.title?.message} label="Headline" help="Keep the visible headline concise. Use the SEO tab for a longer search title." {...form.register("title")} />
               <InputField error={form.formState.errors.slug?.message} label="URL slug" {...form.register("slug")} />
               <InputField className="cms-form-span" error={form.formState.errors.subtitle?.message} label="Subtitle / dek" {...form.register("subtitle")} />
               <label className="cms-field"><span className="cms-label">Review type</span><select aria-disabled={creatingPlace} inert={creatingPlace} {...form.register("reviewType", { onChange: () => form.setValue("restaurantId", "", { shouldDirty: true }) })}><option value="restaurant">Restaurant</option><option value="activity">Activity</option></select></label>
@@ -362,22 +362,21 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
               </>}
               <InputField className="cms-form-span" error={form.formState.errors.tags?.message} label="Tags (comma-separated)" {...form.register("tags")} />
               <InputField label="Visit date (public, optional)" type="date" error={form.formState.errors.reviewTemplate?.visitedAt?.message} {...form.register("reviewTemplate.visitedAt")} />
-              <InputField label="Price / budget" maxLength={120} placeholder="e.g. $80 per person, including drinks" {...form.register("reviewTemplate.priceRange")} />
+              <InputField label="Price / budget" maxLength={120} placeholder="e.g. $4.25 per taco, at our visit" help="Include the unit and what is covered. Use a verified price from your visit." {...form.register("reviewTemplate.priceRange")} />
               <InputField className="cms-form-span" label="Best for" maxLength={240} placeholder="e.g. A relaxed date night" {...form.register("reviewTemplate.bestFor")} />
             </div>
             </section>
             <section className="cms-review-section"><h2>Our experience</h2><p className="cms-muted">Start with the story: the people, the room, and what the visit felt like. Use your own voice. Insert your photos between paragraphs using the media picker.</p>
               <ReviewRichText key={`body-${editorVersion}`} label="Article body" content={form.getValues("content")} media={availableMedia} onChange={(content) => form.setValue("content", content, { shouldDirty: true, shouldValidate: true })} />
             </section>
-            {([
-              ["tried", "What we tried", reviewType === "activity" ? "Describe the activities, tickets, or experiences and what they cost." : "Describe the dishes and drinks, prices, and what you thought."],
-              ["worthKnowing", "Worth knowing", "Standouts, drawbacks, reservations, parking, and practical tips."],
-              ["returnVerdict", "Would we go back?", "Your final recommendation and who you would recommend it to."],
-            ] as const).map(([field, label, hint]) => <section className="cms-review-section" key={field}><h2>{label}</h2><p className="cms-muted">{hint} Leave blank to hide this section.</p>
+            {reviewSections.map(({ field, title: label }) => <section className="cms-review-section" key={field}><h2>{label}</h2><p className="cms-muted">{field === "tried"
+              ? reviewType === "activity" ? "Describe the activities, tickets, or experiences and what they cost." : "Describe the dishes and drinks, prices, and what you thought."
+              : field === "worthKnowing" ? "Give practical advice: timing, reservations, parking, waits, and drawbacks."
+                : "Start with a clear yes or no and why. Then say who you would recommend it to."} The section heading is added automatically; start with your answer. Leave blank to hide this section.</p>
               <ReviewRichText key={`${field}-${editorVersion}`} label={label} content={form.getValues(`reviewTemplate.${field}`) ?? blankDocument} media={availableMedia} onChange={(content) => form.setValue(`reviewTemplate.${field}`, content, { shouldDirty: true, shouldValidate: true })} />
             </section>)}
-            <section className="cms-review-section"><h2>Your verdict and score</h2><p className="cms-muted">The story comes first. The optional score is your opinion, not a customer average.</p>
-              <label className="cms-field"><span className="cms-label">Quick verdict</span><textarea maxLength={1500} placeholder="Your short, honest takeaway." {...form.register("reviewTemplate.quickVerdict")} /></label>
+            <section className="cms-review-section"><h2>Your verdict and score</h2><p className="cms-muted">The quick verdict appears beside the score, above the cover photo. Write one or two sentences, ideally under 280 characters; put the supporting story in Our experience. Longer saved verdicts remain available behind “Read the full takeaway.” The optional score is your opinion, not a customer average.</p>
+              <label className="cms-field"><span className="cms-label">Quick verdict</span><textarea maxLength={1500} placeholder="Worth visiting? Say why in one or two sentences." {...form.register("reviewTemplate.quickVerdict")} /></label>
               <InputField label="Overall score (0–10, optional)" type="number" min={0} max={10} step={0.1} error={form.formState.errors.overallScore?.message} {...form.register("overallScore", { setValueAs: (value: string | number) => value === "" ? "" : Number(value) })} />
             </section>
             <section className="cms-review-section"><h2>Photography</h2><p className="cms-muted">Build the photo story in the Photos tab: upload, caption, reorder, and choose a cover without leaving this review.</p>

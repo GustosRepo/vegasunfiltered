@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { articleDraftSchema, isEditorDocument, neighborhoodSchema, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
 import { migrateSection, reviewSection } from "../../src/lib/content";
-import { blankReviewDocument, blankReviewTemplate, hasReviewContent, readReviewTemplate, reviewPlainText, withReviewTemplate } from "../../src/lib/review-template";
+import { blankReviewDocument, blankReviewTemplate, hasReviewContent, quickVerdictPreview, readReviewTemplate, reviewPlainText, withoutRepeatedSectionLabel, withReviewTemplate } from "../../src/lib/review-template";
 
 test("neighborhood slugs normalize common input and explain unsupported characters", () => {
   const slug = neighborhoodSchema.shape.slug;
@@ -80,4 +80,26 @@ test("review template validates dates, photos, limits, and rich text without nes
     expect(reviewTemplateSchema.safeParse({ ...template, ...patch }).success).toBe(false);
     expect(isEditorDocument({ ...blankReviewDocument(), attrs: { reviewTemplate: { ...template, ...patch } } })).toBe(false);
   }
+});
+
+test("quick verdict previews stay short without losing the rest of a saved verdict", () => {
+  expect(quickVerdictPreview("  ")).toEqual({ summary: "", remainder: "" });
+  expect(quickVerdictPreview("Worth $4.25? Yes, for us. More details follow.")).toEqual({ summary: "Worth $4.25? Yes, for us.", remainder: "More details follow." });
+  expect(quickVerdictPreview("Yes, we'd return.\n\nHere is why.")).toEqual({ summary: "Yes, we'd return.", remainder: "Here is why." });
+  const long = "A thoughtful dinner with generous portions and friendly service ".repeat(12).trim();
+  const preview = quickVerdictPreview(long);
+  expect(preview.summary.length).toBeLessThanOrEqual(280);
+  expect(`${preview.summary} ${preview.remainder}`).toBe(long);
+});
+
+test("only a repeated leading section label is hidden; distinct headings and stored content stay intact", () => {
+  const body = { type: "doc", content: [
+    { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "What We Ordered:" }] },
+    { type: "paragraph", content: [{ type: "text", text: "Two tacos and a drink." }] },
+  ] };
+  expect(withoutRepeatedSectionLabel(body, ["What we tried", "What we ordered"]).content).toEqual(body.content.slice(1));
+  expect(body.content).toHaveLength(2);
+  expect(withoutRepeatedSectionLabel(body, ["Before you go"])).toBe(body);
+  const paragraph = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "What we ordered" }] }] };
+  expect(withoutRepeatedSectionLabel(paragraph, ["What we ordered"])).toBe(paragraph);
 });

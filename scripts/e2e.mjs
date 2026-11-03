@@ -58,6 +58,11 @@ try {
     cpSync(join(root, "tests/e2e/fixtures/review-page.tsx"), join(reviewRoute, "fixture.tsx"));
     writeFileSync(join(reviewRoute, "page.tsx"), 'export { default } from "./fixture";\n');
     writeFileSync(join(reviewRoute, "empty/page.tsx"), 'export { EmptyReviewTestPage as default } from "../fixture";\n');
+    for (const [path, component] of [["activity", "ActivityReviewTestPage"], ["legacy", "LegacyReviewTestPage"]]) {
+      const directory = join(reviewRoute, path);
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(join(directory, "page.tsx"), `export { ${component} as default } from "../fixture";\n`);
+    }
     writeFileSync(join(reviewRoute, "editor/page.tsx"), 'export { ReviewEditorTestPage as default } from "../fixture";\n');
     for (const status of ["Published", "Scheduled", "Archived", "Approved"]) {
       const directory = join(reviewRoute, `editor-${status.toLowerCase()}`);

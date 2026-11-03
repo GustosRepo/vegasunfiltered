@@ -24,10 +24,6 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
-        <div className="footer-social-note">
-          <span>OFFICIAL SOCIALS</span>
-          <p>Links will appear here when our public profiles are live.</p>
-        </div>
       </div>
       <div className="footer-bottom">
         <span>Independent by intention. Honest by design.</span>

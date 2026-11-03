@@ -58,9 +58,28 @@ underscores, accents, and capitals to URL-safe text such as `spring-valley`
 when saved. Other unsupported punctuation produces an actionable validation
 message; duplicate names/slugs are still rejected.
 
-The review editor uses one shared format for restaurants and activities:
-cover/title/disclosure, quick verdict, at-a-glance facts, our experience,
-what we tried, worth knowing, would we go back, and a photo gallery.
+Every existing and new restaurant/activity review uses one shared public layout:
+title and optional score → short quick verdict → byline → cover photo → one
+at-a-glance panel → section links → Our experience → What we tried → Before
+you go → Would we go back? → additional photos → optional receipts/disclosures
+→ related published reviews and category navigation. Private previews use the
+same layout without public recommendations. The permanent rules are in
+[`AGENTS.md`](./AGENTS.md), and desktop/mobile regression tests protect the order.
+
+The quick verdict appears above the cover and shows up to two sentences, at
+most 280 characters. Longer saved verdicts remain available through **Read the
+full takeaway**. Write a concise headline (use the SEO title for search wording)
+and start the return verdict with yes/no and why. Section headings are automatic;
+start each section with the answer rather than repeating its heading.
+
+The single practical-details panel combines the exact linked branch/address,
+public price/budget, best-for, neighborhood, and visit date. Directions and
+official-site links appear when their saved place fields are available. Missing
+facts stay hidden; private visit records are never used to fill them. The cover
+is excluded from additional photos without removing its saved gallery selection.
+Redundant leading section labels are hidden only when they match known labels;
+the stored rich text is preserved. Related links use up to three other indexable
+published reviews in the same category, with a category link when no others exist.
 The score remains optional. Empty optional sections are hidden; the narrative
 sections support rich text, inline library images, links, lists, and video.
 The editor groups the basics, experience/practical narrative, verdict/score,
@@ -85,9 +104,9 @@ browser's unsaved-changes warning. These warnings do not recover work already
 discarded and are not a guarantee against browser crashes or back-button
 navigation. Saved drafts appear in **Admin → Reviews**, not the public feeds.
 
-Existing reviews keep their original body and public rendering until saved
-through the guided editor; the original body then appears under **Our
-experience**, without automatic rewriting. The versioned template is stored
+Existing reviews inherit the shared layout immediately, including reviews that
+predate the guided editor. Their original body appears under **Our experience**,
+without automatic rewriting or invented verdicts. The versioned template is stored
 inside the existing content JSON and saved by the existing atomic review RPC.
 No additional migration is needed for this format, assuming the review-first
 migration below is already installed. Duplication and private previews preserve

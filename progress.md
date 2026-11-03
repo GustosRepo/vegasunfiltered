@@ -1,6 +1,28 @@
 # Vegas Unfiltered — Project Progress
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03
+
+## Shared article layout (November 3)
+
+- Existing and future restaurant/activity reviews and private previews now use
+  the approved order: title/score, short verdict, byline, cover, one practical
+  details panel, working section links, narrative, additional photos, optional
+  receipts/disclosures, and related published reviews/category navigation.
+- Shorter responsive headlines preserve existing punctuation. Verdicts appear
+  before the photo; longer saved text can be expanded. Location, public budget,
+  best-for, neighborhood, and visit date are consolidated, with directions and
+  official-site links when available. Missing public facts are not invented.
+- The renderer and editor share section definitions; duplicate leading labels
+  and cover-photo gallery entries are hidden without rewriting saved content.
+  Legacy bodies inherit the shell immediately. Placeholder socials are removed.
+- Public review CSS has one home in `globals.css`, including private previews;
+  the stale duplicate rules in the admin stylesheet have been removed.
+- `AGENTS.md` records the permanent format, README describes the workflow, and
+  desktop/mobile regression checks protect the structure and interactions.
+- Validation: isolated production build and 96 public/editor/model tests passed;
+  TypeScript and whitespace checks passed. Final screenshots verified aligned
+  details/body columns, a desktop cover capped at 460px, and no mobile overflow.
+  Changes are local; no production deployment or hosted content edits were made.
 
 ## Project snapshot
 
@@ -78,7 +100,7 @@ workflow has not independently inspected the hosted database.
   and set review-specific alt text, captions, and credits (up to 50 photos).
 - Public reviews and private previews share a fixed layout, hide empty optional
   sections, and provide keyboard-dismissible photo enlargement. Legacy bodies
-  are preserved; their public layout changes only after saving in the editor.
+  are preserved and inherit the shared layout without needing to be resaved.
 - Templates use versioned metadata in the existing content JSON, so no additional
   database migration is required. Review duplication retains the template and
   the SEO audit counts the guided sections.

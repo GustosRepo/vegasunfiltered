@@ -88,7 +88,7 @@ test("structured review uses a fixed section order, preserves scores and expands
   await expect(page.getByLabel("Our editorial score: 0 out of 10")).toBeVisible();
   await expect(page.getByText("This article is sponsored.", { exact: false })).toBeVisible();
   const headings = await page.locator("main h2").allTextContents();
-  expect(headings).toEqual(["Quick verdict", "At a glance", "Our experience", "What we tried", "Worth knowing", "Would we go back?", "Photo gallery"]);
+  expect(headings).toEqual(["Quick verdict", "At a glance", "Our experience", "What we tried", "Before you go", "Would we go back?", "Photo gallery"]);
   await expect(page.getByText("November 2, 2026", { exact: true })).toBeVisible();
   await expect(page.getByText("$80 per person")).toBeVisible();
   await expect(page.getByText("Our original experience and photos stay together.")).toBeVisible();
@@ -107,6 +107,72 @@ test("structured review uses a fixed section order, preserves scores and expands
   await dialog.getByRole("button", { name: "Close photo" }).click();
   await expect(dialog).not.toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("review opening puts the verdict before the cover and consolidates usable visit details", async ({ page }) => {
+  await page.goto("/e2e-review-fixture");
+  const verdict = page.getByRole("region", { name: "Quick verdict", exact: true });
+  const cover = page.getByRole("img", { name: "Review cover", exact: true });
+  expect((await verdict.boundingBox())!.y).toBeLessThan((await cover.boundingBox())!.y);
+  expect((await cover.boundingBox())!.height).toBeLessThanOrEqual(460);
+  // Readers can reach the decision before their first scroll on desktop and mobile.
+  expect((await verdict.boundingBox())!.y + (await verdict.boundingBox())!.height).toBeLessThan(page.viewportSize()!.height);
+  const details = page.getByRole("region", { name: "At a glance", exact: true });
+  expect((await details.boundingBox())!.x).toBe((await page.locator(".cms-review-content").boundingBox())!.x);
+  await expect(details).toContainText("Test restaurant — North branch");
+  await expect(details).toContainText("123 Example Road, North Las Vegas, NV 89030");
+  await expect(details).toContainText("$80 per person");
+  await expect(details).toContainText("November 2, 2026");
+  const directions = new URL((await details.getByRole("link", { name: "Directions" }).getAttribute("href"))!);
+  expect(directions.searchParams.get("destination")).toBe("Test restaurant — North branch, 123 Example Road, North Las Vegas, NV 89030");
+  await expect(details.getByRole("link", { name: "Menu / website" })).toHaveAttribute("href", "https://example.com/menu");
+  await expect(page.getByRole("region", { name: "Reporting details" })).toHaveCount(0);
+  const navigation = page.getByRole("navigation", { name: "In this review" });
+  for (const link of await navigation.getByRole("link").all()) {
+    const href = (await link.getAttribute("href"))!;
+    await expect(page.locator(href)).toHaveCount(1);
+    expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  await navigation.getByRole("link", { name: "Before you go", exact: true }).click();
+  await expect(page).toHaveURL(/#before-you-go$/);
+  await expect(page.locator("#before-you-go")).toBeInViewport();
+  await expect.poll(async () => (await page.locator("#before-you-go").boundingBox())!.y).toBeGreaterThanOrEqual(82);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("activities share the format, preserve longer verdicts and skip repeated labels and cover photos", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/activity");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("An evening in Las Vegas: worth the trip?");
+  const verdict = page.getByRole("region", { name: "Quick verdict", exact: true });
+  await expect(verdict).toContainText("Worth the trip? Yes, for a relaxed evening.");
+  const more = verdict.getByText("The longer explanation stays available", { exact: false });
+  await expect(more).not.toBeVisible();
+  await verdict.getByText("Read the full takeaway", { exact: true }).click();
+  await expect(more).toBeVisible();
+  await expect(page.getByText("Activity / location", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Official website" })).toHaveAttribute("href", "https://example.com/menu");
+  await expect(page.getByText("What We Ordered", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("One Thing You Should Know Before Going", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("The experience itself stays intact.", { exact: true })).toBeVisible();
+  const gallery = page.getByRole("region", { name: "Photo gallery", exact: true });
+  await expect(gallery.getByRole("button", { name: /Enlarge photo/ })).toHaveCount(1);
+  await expect(gallery.getByRole("img", { name: "The dining room" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Another evening out" })).toHaveAttribute("href", "/activities/another-evening");
+  await expect(page.getByRole("link", { name: "Browse all activities" })).toHaveAttribute("href", "/activities");
+  await expect(page.getByText("Links will appear here", { exact: false })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("legacy reviews inherit the shared shell without inventing optional facts or scores", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/legacy");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Legacy review!");
+  await expect(page.getByRole("heading", { name: "Our experience", exact: true })).toBeVisible();
+  await expect(page.getByText("The original review is preserved without a structured template.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "At a glance", exact: true })).toContainText("North branch");
+  await expect(page.getByRole("region", { name: "Quick verdict", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "In this review" })).toHaveCount(0);
+  await expect(page.locator(".review-score")).toHaveCount(0);
+  await expect(page.getByText("Price / budget", { exact: true })).toHaveCount(0);
 });
 
 test("empty optional review sections do not render", async ({ page }) => {
