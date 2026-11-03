@@ -124,6 +124,7 @@
 .cms-tabs { display: flex; gap: 4px; margin: 0 0 15px; border-bottom: 1px solid var(--cms-line); }
 .cms-tabs button { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; color: var(--cms-muted); background: transparent; font: inherit; font-size: 11px; cursor: pointer; }
 .cms-tabs button[aria-selected="true"] { border-bottom-color: var(--cms-accent); color: var(--cms-ink); font-weight: 700; }
+.cms-editor-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .cms-save-row { position: sticky; z-index: 3; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 20px -20px -20px; padding: 11px 20px; border-top: 1px solid var(--cms-line); background: rgba(255,255,255,.96); }
 .cms-save-state { display: inline-flex; align-items: center; gap: 6px; color: var(--cms-muted); font-size: 10px; }
 .cms-save-state[data-state="saved"] { color: var(--cms-green); }
@@ -161,8 +162,11 @@
 .cms-rich-editor table { width: 100%; border-collapse: collapse; }.cms-rich-editor td,.cms-rich-editor th { padding: 7px; border: 1px solid #dfe3e8; }
 .cms-editor-placeholder { color: #9ba2aa; }
 .cms-seo-preview { margin: 15px 0; padding: 15px; border: 1px solid var(--cms-line); background: #fafbfc; }
-.cms-seo-preview b { color: #1b5b3e; font-size: 15px; font-weight: 500; }
-.cms-seo-preview a { display: block; margin: 3px 0; color: #58665c; font-size: 10px; }
+.cms-seo-preview b { display: block; color: #1b5b3e; font-size: 17px; font-weight: 500; }
+.cms-seo-url { display: block; margin: 3px 0; color: #58665c; font-size: 11px; overflow-wrap: anywhere; }
+.cms-seo-preview small { display: block; margin: 8px 0; color: var(--cms-muted); font-size: 10px; }
+.cms-social-preview { display: flex; align-items: center; gap: 12px; color: var(--cms-muted); }
+.cms-social-preview img { width: 160px; height: 84px; object-fit: cover; border: 1px solid var(--cms-line); }
 .cms-seo-preview p { margin: 5px 0 0; color: #626a74; font-size: 11px; }
 .cms-login-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 18px; color: #252a32; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; }
 .cms-login-brand { width: min(100%, 410px); display: flex; align-items: center; gap: 10px; margin-bottom: 23px; color: #515965; font-size: 9px; font-weight: 700; letter-spacing: .14em; }

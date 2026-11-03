@@ -1,5 +1,87 @@
 import { test, expect } from "@playwright/test";
 
+test("SEO preview follows the review type, metadata fallbacks and social image selection", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  // A missing headline keeps this fixture from sending any database writes.
+  await page.getByLabel("URL slug", { exact: true }).fill("our-evening");
+  await page.getByLabel("Subtitle / dek", { exact: true }).fill("What our evening actually cost.");
+  await page.getByRole("combobox", { name: "Featured image", exact: true }).selectOption("123e4567-e89b-42d3-a456-426614174000");
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  const preview = page.getByLabel("Search result preview");
+  await expect(preview).toContainText("https://vegasunfiltered.com/restaurants/our-evening");
+  await expect(preview).toContainText("What our evening actually cost.");
+  await expect(page.locator(".cms-social-preview img")).toHaveAttribute("alt", "Our dinner");
+  await page.getByLabel("SEO title", { exact: true }).fill("Our honest evening review");
+  await page.getByLabel("Meta description", { exact: true }).fill("Our firsthand take on the experience.");
+  await page.getByLabel("Primary keyword", { exact: true }).fill("Las Vegas evening");
+  await page.getByLabel("Secondary keywords (comma-separated)", { exact: true }).fill("date night, Las Vegas");
+  await page.getByLabel("Internal linking notes", { exact: true }).fill("Link our other date night review.");
+  await page.getByLabel("Social sharing image", { exact: true }).selectOption("123e4567-e89b-42d3-a456-426614174001");
+  await expect(page.locator(".cms-social-preview img")).toHaveAttribute("alt", "The dining room");
+  await expect(preview).toContainText("Our honest evening review");
+  await expect(preview).toContainText("Our firsthand take on the experience.");
+  await page.getByRole("tab", { name: "Content", exact: true }).click();
+  await page.getByRole("combobox", { name: "Review type", exact: true }).selectOption("activity");
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  await expect(preview).toContainText("https://vegasunfiltered.com/activities/our-evening");
+  await expect(page.getByLabel("Primary keyword", { exact: true })).toHaveValue("Las Vegas evening");
+  await page.getByLabel("Canonical URL (HTTPS)", { exact: true }).fill("https://example.com/original");
+  await expect(preview).toContainText("https://example.com/original");
+  await page.getByLabel(/Allow search engines/).check();
+  await expect(page.getByText(/Once published, this review can appear/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("save and publishing validation opens the tab containing the invalid field", async ({ page }) => {
+  const writes: string[] = [];
+  page.on("request", request => { if (request.headers()["next-action"]) writes.push(request.url()); });
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("tab", { name: "Publishing", exact: true }).click();
+  await page.getByRole("button", { name: "Submit for review", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Content", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Headline", { exact: true })).toBeFocused();
+  await page.getByLabel("Headline", { exact: true }).fill("Our evening review");
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
+  await page.getByLabel("Canonical URL (HTTPS)", { exact: true }).fill("http://example.com/original");
+  await page.getByRole("tab", { name: "Content", exact: true }).click();
+  await page.getByLabel("URL slug", { exact: true }).fill("our-evening");
+  await page.getByRole("tab", { name: "Publishing", exact: true }).click();
+  await page.getByRole("button", { name: "Submit for review", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "SEO", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Canonical URL (HTTPS)", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator(".cms-form-error")).toContainText("valid HTTPS URL");
+  expect(writes).toEqual([]);
+});
+
+test("review tabs support keyboard navigation", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor");
+  await page.getByRole("tab", { name: "Content", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Photos", exact: true })).toBeFocused();
+  await expect(page.getByRole("tabpanel")).toHaveAccessibleName("Photos");
+  await page.keyboard.press("End");
+  await expect(page.getByRole("tab", { name: "Publishing", exact: true })).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(page.getByRole("tab", { name: "Content", exact: true })).toBeFocused();
+});
+
+test("publishing controls match live, scheduled, archived and approved review states", async ({ page }) => {
+  await page.goto("/e2e-review-fixture/editor-published");
+  await expect(page.getByRole("button", { name: "Save changes", exact: true })).toBeVisible();
+  await expect(page.getByText("Saving changes updates the live review immediately.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Unpublish", exact: true })).toBeVisible();
+  await page.goto("/e2e-review-fixture/editor-scheduled");
+  await expect(page.getByRole("button", { name: "Archive", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Publish now", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Cancel schedule and return to draft", exact: true })).toBeVisible();
+  await page.goto("/e2e-review-fixture/editor-archived");
+  await expect(page.getByRole("button", { name: "Return to draft", exact: true })).toBeVisible();
+  await page.goto("/e2e-review-fixture/editor-approved");
+  await expect(page.getByRole("button", { name: "Publish now", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Schedule", exact: true })).toBeDisabled();
+  await expect(page.getByText(/Automatic publishing is unavailable/)).toBeVisible();
+});
+
 test("structured review uses a fixed section order, preserves scores and expands gallery photos", async ({ page }) => {
   await page.goto("/e2e-review-fixture");
   await expect(page.getByRole("heading", { name: "Test-only review." })).toBeVisible();

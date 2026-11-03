@@ -92,7 +92,7 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
     await expect(visitor).toHaveURL(/\/admin\/login$/);
     await expect(visitor.getByText("Original reporting")).toHaveCount(0);
     await page.goto(`/admin/reviews/${id}/edit`);
-    await page.getByRole("tab", { name: "Seo", exact: true }).click();
+    await page.getByRole("tab", { name: "SEO", exact: true }).click();
     await page.getByLabel("SEO title", { exact: true }).fill(`E2E published ${backend.slug}`);
     await page.getByLabel("Meta description", { exact: true }).fill("A verified test story covering publication and search engine discovery.");
     await page.getByLabel(/Allow search engines/).check();
@@ -136,6 +136,55 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
   } finally {
     await anonymous.close();
   }
+});
+
+test("SEO audit directs missing author and cover issues to the settings and photos that fix them", async ({ ownerPage: page, backend }) => {
+  const article = await backend.seedArticle({ status: "published", indexable: true });
+  const { error } = await backend.admin.from("profiles").update({ display_name: "" }).eq("id", backend.accounts.owner.id);
+  if (error) throw error;
+  await page.goto("/admin/seo");
+  const authorIssue = page.locator("li").filter({ hasText: article.title }).filter({ hasText: "Author attribution is missing" });
+  await authorIssue.getByRole("link", { name: article.title, exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/settings#author-profile$/);
+  const name = `E2E Author ${backend.slug}`;
+  await page.getByLabel("Public author name", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "Save author profile", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Author profile saved" })).toBeVisible();
+  const { data: profile, error: profileError } = await backend.admin.from("profiles").select("display_name,role").eq("id", backend.accounts.owner.id).single();
+  if (profileError) throw profileError;
+  expect(profile).toEqual({ display_name: name, role: "owner" });
+  // Future role synchronization must keep the chosen public byline.
+  const { error: syncError } = await backend.admin.auth.admin.updateUserById(backend.accounts.owner.id, { app_metadata: { cms_role: "owner" } });
+  if (syncError) throw syncError;
+  await page.goto("/admin/seo");
+  await expect(page.locator("li").filter({ hasText: article.title }).filter({ hasText: "Author attribution is missing" })).toHaveCount(0);
+  const photoIssue = page.locator("li").filter({ hasText: article.title }).filter({ hasText: "Featured image is missing" });
+  await photoIssue.getByRole("link", { name: article.title, exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Photos", exact: true })).toHaveAttribute("aria-selected", "true");
+});
+
+test("SEO indexing can be enabled and disabled after publication without republishing", async ({ ownerPage: page, backend, browser }) => {
+  const article = await backend.seedArticle({ status: "published", indexable: false });
+  await page.goto(`/admin/reviews/${article.id}/edit?tab=seo`);
+  await expect(page.getByRole("tab", { name: "SEO", exact: true })).toHaveAttribute("aria-selected", "true");
+  const visitor = await browser.newPage();
+  try {
+    for (const enabled of [true, false, true]) {
+      await page.getByLabel(/Allow search engines/).setChecked(enabled);
+      await page.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect.poll(async () => {
+        const { data, error } = await backend.admin.from("articles").select("is_indexable,status").eq("id", article.id).single();
+        if (error) throw error;
+        return data;
+      }).toEqual({ is_indexable: enabled, status: "published" });
+      await expect(page.getByRole("status").filter({ hasText: "All changes saved" })).toBeVisible();
+      await visitor.goto(`/restaurants/${article.slug}`);
+      if (enabled) await expect(visitor.locator('meta[name="robots"]')).not.toHaveAttribute("content", /noindex/);
+      else await expect(visitor.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+      const sitemap = await (await visitor.request.get("/sitemap.xml")).text();
+      expect(sitemap.includes(`/restaurants/${article.slug}`)).toBe(enabled);
+    }
+  } finally { await visitor.close(); }
 });
 
 test("review photos upload in place, reorder, persist captions, select a cover, and preview", async ({ ownerPage: page, backend }) => {
@@ -256,13 +305,13 @@ test("media upload, metadata, featured/social selection, search and delete", asy
   const article = await backend.seedArticle();
   await page.goto(`/admin/reviews/${article.id}/edit`);
   await page.getByLabel("Featured image", { exact: true }).selectOption({ label: backend.slug });
-  await page.getByRole("tab", { name: "Seo", exact: true }).click();
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
   await page.getByLabel("Social sharing image").selectOption({ label: backend.slug });
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "All changes saved" })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Featured image", { exact: true })).not.toHaveValue("");
-  await page.getByRole("tab", { name: "Seo", exact: true }).click();
+  await page.getByRole("tab", { name: "SEO", exact: true }).click();
   await expect(page.getByLabel("Social sharing image")).not.toHaveValue("");
   await page.goto("/admin/media");
   await page.getByLabel("Search media", { exact: true }).fill(backend.slug);

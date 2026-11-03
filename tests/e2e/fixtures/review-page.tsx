@@ -48,6 +48,23 @@ export function ReviewEditorTestPage() {
   </main></div>;
 }
 
+function SavedReviewEditor({ status }: { status: string }) {
+  return <div className="cms-app"><main className="cms-content"><Suspense fallback={<p>Loading review editor...</p>}><ArticleEditor
+    categories={[]} media={[]} restaurants={[]} neighborhoods={[]} role="owner" initialTab="publishing"
+    article={{
+      id: base.id, title: base.title, slug: base.slug, subtitle: base.subtitle, kind: "restaurant_review",
+      category_id: null, featured_media_id: null, content: withReviewTemplate(text("Our firsthand reporting."), template), status, updated_at: base.updatedAt,
+      restaurant_id: null, neighborhood_id: null, is_sponsored: false, review_type: "restaurant", overall_score: 8.5, tags: "",
+      scheduled_at: status === "scheduled" ? "2099-12-31T23:00:00Z" : null,
+    }}
+  /></Suspense></main></div>;
+}
+
+export function PublishedReviewEditorTestPage() { return <SavedReviewEditor status="published" />; }
+export function ScheduledReviewEditorTestPage() { return <SavedReviewEditor status="scheduled" />; }
+export function ArchivedReviewEditorTestPage() { return <SavedReviewEditor status="archived" />; }
+export function ApprovedReviewEditorTestPage() { return <SavedReviewEditor status="approved" />; }
+
 export function IdleSessionTestPage() {
   return <div className="cms-app"><h1>Session timer test</h1><IdleSession initialDeadline={4102444800000} /></div>;
 }

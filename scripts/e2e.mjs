@@ -59,6 +59,11 @@ try {
     writeFileSync(join(reviewRoute, "page.tsx"), 'export { default } from "./fixture";\n');
     writeFileSync(join(reviewRoute, "empty/page.tsx"), 'export { EmptyReviewTestPage as default } from "../fixture";\n');
     writeFileSync(join(reviewRoute, "editor/page.tsx"), 'export { ReviewEditorTestPage as default } from "../fixture";\n');
+    for (const status of ["Published", "Scheduled", "Archived", "Approved"]) {
+      const directory = join(reviewRoute, `editor-${status.toLowerCase()}`);
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(join(directory, "page.tsx"), `export { ${status}ReviewEditorTestPage as default } from "../fixture";\n`);
+    }
     writeFileSync(join(reviewRoute, "idle/page.tsx"), 'import { Suspense } from "react"; import { IdleSessionTestPage } from "../fixture"; export default function Page() { return <Suspense fallback={<p>Loading timer...</p>}><IdleSessionTestPage /></Suspense>; }\n');
   }
   cpSync(join(root, "node_modules"), join(workspace, "node_modules"), {

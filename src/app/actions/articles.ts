@@ -123,6 +123,9 @@ export async function transitionArticle(input: unknown): Promise<CmsActionResult
 
   let scheduledAt: string | null = null;
   if (parsed.data.targetStatus === "scheduled") {
+    if (!process.env.CRON_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return { ok: false, message: "Automatic publishing is not configured in this environment. Publish an approved review manually, or configure scheduled publishing first." };
+    }
     const localDateTime = parsed.data.scheduledLocal;
     if (!localDateTime || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localDateTime)) {
       return { ok: false, message: "Choose a valid publication date and time." };

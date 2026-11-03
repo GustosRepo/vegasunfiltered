@@ -185,9 +185,36 @@ Review saves no longer label every database permission denial as a role issue.
 They distinguish expired leases, stale sign-in permission claims, and database
 permission errors. After a role change, sign out and sign in again; verify that
 the Auth role and editorial profile agree and all migrations are installed.
-Do not disable RLS to work around an Owner save error. A hosted Owner save has
-not yet been verified by this workflow; the original failure's database cause
-is not confirmed.
+For `Database permission check failed for owner: CMS access is required`, apply
+[`20261102000006_cms_role_checks.sql`](./supabase/migrations/20261102000006_cms_role_checks.sql)
+after migration 05 in the Supabase SQL Editor or through your migration runner.
+Three publishing functions used a variable named `current_role`, which PostgreSQL
+resolves as its built-in database role (`authenticated`) instead of the signed
+CMS role. Migration 06 replaces those functions with an unambiguous variable;
+it preserves their grants, RLS, inactivity limits, and contributor restrictions.
+Do not rerun the original schema migrations or disable RLS. Retry saving after
+applying migration 06; signing in again alone cannot fix this SQL name collision.
+
+The review editor includes Content, Photos, SEO, and Publishing tabs. The SEO
+preview follows the restaurant/activity URL, falls back to the headline/site
+name and subtitle, and shows the selected social sharing image. A blank canonical
+URL uses the review's own URL. Keywords and internal linking notes are private
+editorial planning fields; add actual links in the review text. SEO audit links
+open the relevant editor tab, Media library, or author settings. Saving or
+changing status reveals the tab containing an invalid field. Set your public
+byline in **Settings → Your author profile**; this updates your reviews and
+preserves the chosen name when your role is synchronized. Signing out affects
+only the current session.
+
+Apply [`20261102000007_review_indexing.sql`](./supabase/migrations/20261102000007_review_indexing.sql)
+after migration 06. It keeps the indexing checkbox effective when a published
+review is saved, without requiring another publication transition. Turning it
+off applies noindex and removes the review from public listings and the sitemap;
+the published direct URL stays public. It does not publish drafts. Saving a
+published review updates it live. Archived reviews can return to draft, and a
+scheduled review must be returned to draft before archiving. Scheduling controls
+are available only when the publishing endpoint credentials are configured;
+automatic runs still require the deployed hourly cron.
 
 At timeout, unsaved review form contents are kept in same-tab `sessionStorage`,
 scoped to the signed-in user and review (or new draft). After signing in as the

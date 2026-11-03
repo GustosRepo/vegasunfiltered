@@ -1,6 +1,92 @@
 import { createClient } from "@supabase/supabase-js";
 import { test, expect } from "./fixtures";
 
+for (const role of ["owner", "editor", "contributor"] as const) {
+  test(`${role} can save and submit reviews using the signed CMS role`, async ({ backend }) => {
+    const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+    const { error: loginError } = await client.auth.signInWithPassword(backend.accounts[role]);
+    if (loginError) throw loginError;
+    const { data: deadline, error: leaseError } = await client.rpc("cms_session_deadline");
+    if (leaseError) throw leaseError;
+    expect(deadline).toBeTruthy();
+    const review = {
+      title: `Role regression ${role}`, subtitle: "", slug: `${backend.slug}-${role}`,
+      reviewType: "restaurant", overallScore: 8.5,
+      content: { type: "doc", content: [{ type: "paragraph" }] },
+      seo: { indexing_enabled: false }, tags: [], isSponsored: false,
+    };
+    const { data: created, error: createError } = await client.rpc("save_review", { p_review: review });
+    expect(createError).toBeNull();
+    expect(created).toHaveLength(1);
+    const { data: updated, error: updateError } = await client.rpc("save_review", {
+      p_review: { ...review, id: created[0].id, expectedUpdatedAt: created[0].updated_at, title: `Updated ${role}`, overallScore: 9 },
+    });
+    expect(updateError).toBeNull();
+    expect(updated).toHaveLength(1);
+    const { data: persisted, error: readError } = await client.from("articles")
+      .select("title,overall_score,author_id,is_sponsored").eq("id", created[0].id).single();
+    expect(readError).toBeNull();
+    expect(persisted).toEqual({ title: `Updated ${role}`, overall_score: 9, author_id: backend.accounts[role].id, is_sponsored: false });
+    if (role === "contributor") {
+      const { error: contextError } = await client.rpc("set_article_editorial_context", {
+        p_article_id: updated[0].id, p_expected_updated_at: updated[0].updated_at,
+        p_media_id: null, p_open_graph_media_id: null, p_restaurant_id: null,
+        p_neighborhood_id: null, p_is_sponsored: true,
+      });
+      expect(contextError?.code).toBe("42501");
+      expect(contextError?.message).toContain("Only editors");
+      const { error: rejectedSave } = await client.rpc("save_review", {
+        p_review: { ...review, id: updated[0].id, expectedUpdatedAt: updated[0].updated_at, title: "Must roll back", isSponsored: true },
+      });
+      expect(rejectedSave?.code).toBe("42501");
+      const { data: unchanged, error: unchangedError } = await client.from("articles")
+        .select("title,is_sponsored").eq("id", created[0].id).single();
+      expect(unchangedError).toBeNull();
+      expect(unchanged).toEqual({ title: `Updated ${role}`, is_sponsored: false });
+    }
+    const { data: submitted, error: submitError } = await client.rpc("transition_article", {
+      p_article_id: created[0].id, p_target_status: "in_review", p_scheduled_at: null,
+    });
+    expect(submitError).toBeNull();
+    expect(submitted.status).toBe("in_review");
+    const { data: approved, error: approvalError } = await client.rpc("transition_article", {
+      p_article_id: created[0].id, p_target_status: "approved", p_scheduled_at: null,
+    });
+    if (role === "contributor") {
+      expect(approvalError?.code).toBe("42501");
+      expect(approvalError?.message).toContain("Contributors can only submit");
+    } else {
+      expect(approvalError).toBeNull();
+      expect(approved.status).toBe("approved");
+    }
+    await client.auth.signOut();
+  });
+}
+
+test("a signed-in account without a CMS role cannot save or submit reviews", async ({ backend }) => {
+  const article = await backend.seedArticle();
+  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+  const { error: loginError } = await client.auth.signInWithPassword(backend.accounts.unassigned);
+  if (loginError) throw loginError;
+  const { data: deadline, error: leaseError } = await client.rpc("cms_session_deadline");
+  if (leaseError) throw leaseError;
+  expect(deadline).toBeTruthy();
+  const { error: saveError } = await client.rpc("save_review", {
+    p_review: { title: "Unauthorized", reviewType: "restaurant" },
+  });
+  expect(saveError?.code).toBe("42501");
+  const { error: submitError } = await client.rpc("transition_article", {
+    p_article_id: article.id, p_target_status: "in_review", p_scheduled_at: null,
+  });
+  expect(submitError?.code).toBe("42501");
+  const { error: contextError } = await client.rpc("set_article_editorial_context", {
+    p_article_id: article.id, p_expected_updated_at: null, p_media_id: null,
+    p_open_graph_media_id: null, p_restaurant_id: null, p_neighborhood_id: null, p_is_sponsored: false,
+  });
+  expect(contextError?.code).toBe("42501");
+  await client.auth.signOut();
+});
+
 test("contributors can draft and submit but cannot publish or access private records", async ({ page, backend }) => {
   const article = await backend.seedArticle({ author: "contributor" });
   const other = await backend.seedArticle();

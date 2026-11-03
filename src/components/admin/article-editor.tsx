@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { InputHTMLAttributes } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 import { articleDraftSchema, type EditorNode } from "@/lib/cms-schemas";
-import { saveArticle, transitionArticle } from "@/app/actions/articles";
+import { saveArticle, transitionArticle, type CmsActionResult } from "@/app/actions/articles";
 import type { CmsRole } from "@/lib/admin-auth";
 import { DeleteArticleButton } from "@/components/admin/destructive-action";
 import { ReviewRichText, type ReviewMediaOption } from "@/components/admin/review-rich-text";
@@ -16,6 +17,8 @@ import { ReviewPhotos } from "@/components/admin/review-photos";
 import { MediaUploadForm } from "@/components/admin/media-upload-form";
 import { blankReviewTemplate, readReviewTemplate } from "@/lib/review-template";
 import { InlinePlace, type ReviewPlace } from "@/components/admin/inline-place";
+import { reviewSection } from "@/lib/content";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 type Category = { id: string; name: string; slug: string };
 type MediaOption = ReviewMediaOption;
@@ -30,17 +33,36 @@ type Article = {
   category_id: string | null; featured_media_id: string | null; content: EditorNode; status: string; updated_at: string;
   restaurant_id: string | null; neighborhood_id: string | null;
   is_sponsored: boolean;
-  review_type: "restaurant" | "activity"; overall_score: number | null;
+  review_type: "restaurant" | "activity"; overall_score: number | null; scheduled_at?: string | null;
   tags: string; seo?: ArticleSeo | ArticleSeo[] | null;
 };
 
 const blankDocument: EditorNode = { type: "doc", content: [{ type: "paragraph" }] };
-type Tab = "content" | "photos" | "seo" | "publishing";
+const editorTabs = [
+  { id: "content", label: "Content" }, { id: "photos", label: "Photos" },
+  { id: "seo", label: "SEO" }, { id: "publishing", label: "Publishing" },
+] as const;
+type Tab = (typeof editorTabs)[number]["id"];
+
+function validationField(path: string): { label: string; tab: Tab } {
+  const seoFields: Record<string, string> = {
+    seoTitle: "SEO title", metaDescription: "Meta description", canonicalUrl: "Canonical URL",
+    openGraphMediaId: "Social sharing image", primaryKeyword: "Primary keyword",
+    secondaryKeywords: "Secondary keywords", internalLinkingNotes: "Internal linking notes",
+  };
+  if (seoFields[path]) return { label: seoFields[path], tab: "seo" };
+  if (path.startsWith("reviewTemplate.gallery")) return { label: "Photo gallery", tab: "photos" };
+  const labels: Record<string, string> = {
+    title: "Headline", slug: "URL slug", subtitle: "Subtitle", overallScore: "Overall score",
+    tags: "Tags", "reviewTemplate.visitedAt": "Visit date", "reviewTemplate.quickVerdict": "Quick verdict",
+  };
+  return { label: labels[path] ?? "Review content", tab: "content" };
+}
 
 type ArticleContextOption = { id: string; name: string };
 type PlaceOption = ArticleContextOption & { place_type: "restaurant" | "activity" };
 
-export function ArticleEditor({ article, media, restaurants, neighborhoods, initialPlaceId, visits = [], role, recoveryUserId }: { article?: Article; categories: Category[]; media: MediaOption[]; restaurants: PlaceOption[]; neighborhoods: ArticleContextOption[]; initialPlaceId?: string; visits?: { id: string; visited_at: string }[]; role: CmsRole; recoveryUserId?: string }) {
+export function ArticleEditor({ article, media, restaurants, neighborhoods, initialPlaceId, initialTab = "content", schedulingConfigured = false, visits = [], role, recoveryUserId }: { article?: Article; categories: Category[]; media: MediaOption[]; restaurants: PlaceOption[]; neighborhoods: ArticleContextOption[]; initialPlaceId?: string; initialTab?: Tab; schedulingConfigured?: boolean; visits?: { id: string; visited_at: string }[]; role: CmsRole; recoveryUserId?: string }) {
   const router = useRouter();
   const initialSeo = Array.isArray(article?.seo) ? article.seo[0] : article?.seo;
   const form = useForm<ArticleDraftValues>({
@@ -73,7 +95,8 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     },
     mode: "onChange",
   });
-  const [tab, setTab] = useState<Tab>("content");
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const editorId = useId();
   const [createdPlaces, setCreatedPlaces] = useState<ReviewPlace[]>([]);
   const [placeSearch, setPlaceSearch] = useState("");
   const [creatingPlace, setCreatingPlace] = useState(false);
@@ -85,18 +108,29 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   const [transitionMessage, setTransitionMessage] = useState("");
   const [isTransitioning, startTransition] = useTransition();
   const saveRef = useRef(false);
-  const queuedRef = useRef(false);
-  const persistRef = useRef<() => Promise<void>>(async () => {});
+  const savePromiseRef = useRef<Promise<CmsActionResult | null> | null>(null);
+  const changingStatusRef = useRef(false);
+  const persistRef = useRef<(showErrors?: boolean) => Promise<CmsActionResult | null>>(async () => null);
   const watchedValues = useWatch({ control: form.control });
   const title = useWatch({ control: form.control, name: "title" });
   const reviewType = useWatch({ control: form.control, name: "reviewType" });
   const slug = useWatch({ control: form.control, name: "slug" });
   const seoTitle = useWatch({ control: form.control, name: "seoTitle" });
   const metaDescription = useWatch({ control: form.control, name: "metaDescription" });
+  const subtitle = useWatch({ control: form.control, name: "subtitle" });
+  const canonicalUrl = useWatch({ control: form.control, name: "canonicalUrl" });
+  const indexingEnabled = useWatch({ control: form.control, name: "indexingEnabled" });
+  const openGraphMediaId = useWatch({ control: form.control, name: "openGraphMediaId" });
   const template = useWatch({ control: form.control, name: "reviewTemplate" }) ?? blankReviewTemplate();
   const featuredMediaId = useWatch({ control: form.control, name: "featuredMediaId" });
   const selectedPlaceId = useWatch({ control: form.control, name: "restaurantId" });
   const status = article?.status ?? "draft";
+  const canPublish = role !== "contributor";
+  const defaultUrl = `${SITE_URL}/${reviewSection(reviewType)}/${slug || "review-slug"}`;
+  const previewUrl = canonicalUrl || defaultUrl;
+  const previewTitle = seoTitle || (title ? `${title} | ${SITE_NAME}` : "Review title preview");
+  const previewDescription = metaDescription || subtitle;
+  const sharingImage = availableMedia.find((item) => item.id === (openGraphMediaId || featuredMediaId));
   const expiringSession = useRef(false);
   const recoveryKey = recoveryUserId ? `cms-review-recovery:${recoveryUserId}:${article?.id ?? "new"}` : null;
   const [recovery, setRecovery] = useState<ArticleDraftValues | null>(null);
@@ -145,61 +179,74 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     }
   }, [article, form]);
 
-  const persist = useCallback(async () => {
-    if (saveRef.current) {
-      queuedRef.current = true;
-      return;
+  const showValidation = useCallback((values: ArticleDraftValues, reveal: boolean) => {
+    const validation = articleDraftSchema.safeParse(values);
+    if (validation.success) return;
+    const issue = validation.error.issues[0];
+    const field = validationField(issue.path.join("."));
+    setSaveMessage(`Not saved — ${field.label}: ${issue.message}`);
+    if (reveal) {
+      setTab(field.tab);
+      window.setTimeout(() => form.setFocus(issue.path.join(".") as Parameters<typeof form.setFocus>[0]), 0);
     }
-    const snapshot = structuredClone(form.getValues());
+  }, [form]);
+
+  const persist = useCallback(async (showErrors = false): Promise<CmsActionResult | null> => {
+    if (savePromiseRef.current) {
+      const result = await savePromiseRef.current;
+      if (!result?.ok && showErrors) showValidation(form.getValues(), true);
+      return result;
+    }
     saveRef.current = true;
-    const valid = await form.trigger();
-    if (!valid) {
-      const validation = articleDraftSchema.safeParse(snapshot);
-      const issue = validation.success ? undefined : validation.error.issues[0];
-      const field = issue?.path.join(".") ?? "Review";
-      const label = field === "title" ? "Headline" : field === "slug" ? "URL slug" : field;
-      setSaveMessage(`Not saved — ${label}: ${field === "slug" ? "Use lowercase words separated by hyphens, for example spring-valley-dinner." : issue?.message ?? "Check required fields."}`);
-      saveRef.current = false;
-      return;
-    }
-    setSaveMessage("Saving…");
-    let result: Awaited<ReturnType<typeof saveArticle>>;
-    try {
-      result = await saveArticle(snapshot);
-    } catch (error) {
-      setSaveMessage(error instanceof Error ? `Save failed: ${error.message}` : "Save failed. Retry your changes.");
-      saveRef.current = false;
-      return;
-    }
-    if (!result.ok || !result.id || !result.updatedAt) {
-      setSaveMessage(result.message);
-      saveRef.current = false;
-      return;
-    }
-    form.setValue("id", result.id, { shouldDirty: false });
-    form.setValue("expectedUpdatedAt", result.updatedAt, { shouldDirty: false });
-    const current = form.getValues();
-    const changedDuringSave = JSON.stringify({ ...current, id: undefined, expectedUpdatedAt: undefined }) !== JSON.stringify({ ...snapshot, id: undefined, expectedUpdatedAt: undefined });
-    if (!changedDuringSave) {
-      form.reset({ ...snapshot, id: result.id, expectedUpdatedAt: result.updatedAt });
-      if (recoveryKey) {
-        try { sessionStorage.removeItem(recoveryKey); } catch (error) {
-          setSaveMessage(`Review saved, but recovery cleanup failed: ${error instanceof Error ? error.message : "Browser storage failed."}`);
-          saveRef.current = false;
-          return;
+    const task = (async (): Promise<CmsActionResult | null> => {
+      // Keep one save in flight and drain changes made while the request runs.
+      while (true) {
+        const snapshot = structuredClone(form.getValues());
+        if (!await form.trigger()) {
+          showValidation(snapshot, showErrors);
+          return null;
         }
+        setSaveMessage("Saving…");
+        let result: CmsActionResult;
+        try {
+          result = await saveArticle(snapshot);
+        } catch (error) {
+          setSaveMessage(error instanceof Error ? `Save failed: ${error.message}` : "Save failed. Retry your changes.");
+          return null;
+        }
+        if (!result.ok || !result.id || !result.updatedAt) {
+          setSaveMessage(result.message);
+          return null;
+        }
+        form.setValue("id", result.id, { shouldDirty: false });
+        form.setValue("expectedUpdatedAt", result.updatedAt, { shouldDirty: false });
+        const current = form.getValues();
+        const changedDuringSave = JSON.stringify({ ...current, id: undefined, expectedUpdatedAt: undefined }) !== JSON.stringify({ ...snapshot, id: undefined, expectedUpdatedAt: undefined });
+        if (changedDuringSave) {
+          setSaveMessage("Saving newer changes…");
+          continue;
+        }
+        form.reset({ ...snapshot, id: result.id, expectedUpdatedAt: result.updatedAt });
+        if (recoveryKey) {
+          try { sessionStorage.removeItem(recoveryKey); } catch (error) {
+            setSaveMessage(`Review saved, but recovery cleanup failed: ${error instanceof Error ? error.message : "Browser storage failed."}`);
+            return result;
+          }
+        }
+        setSaveMessage("All changes saved");
+        if (!changingStatusRef.current && !article && window.location.pathname.endsWith("/new")) {
+          router.replace(`/admin/reviews/${result.id}?tab=${tab}`);
+        }
+        return result;
       }
+    })();
+    savePromiseRef.current = task;
+    try { return await task; }
+    finally {
+      saveRef.current = false;
+      savePromiseRef.current = null;
     }
-    setSaveMessage(changedDuringSave ? "Saving newer changes…" : "All changes saved");
-    if (!changedDuringSave && !article && typeof window !== "undefined" && window.location.pathname.endsWith("/new")) {
-      router.replace(`/admin/reviews/${result.id}`);
-    }
-    saveRef.current = false;
-    if (queuedRef.current || changedDuringSave) {
-      queuedRef.current = false;
-      window.setTimeout(() => void persistRef.current(), 0);
-    }
-  }, [article, form, router, recoveryKey]);
+  }, [article, form, router, recoveryKey, showValidation, tab]);
 
   useEffect(() => {
     persistRef.current = persist;
@@ -208,7 +255,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   useEffect(() => {
     if (!form.formState.isDirty) return;
     let timeout = 0;
-    timeout = window.setTimeout(() => void persistRef.current(), 1600);
+    timeout = window.setTimeout(() => { if (!changingStatusRef.current) void persistRef.current(); }, 1600);
     return () => window.clearTimeout(timeout);
   }, [form.formState.isDirty, watchedValues]);
 
@@ -238,35 +285,27 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     };
   }, [form.formState.isDirty]);
 
-  const publish = (targetStatus: "in_review" | "approved" | "published" | "draft" | "archived") => {
-    void form.handleSubmit(async (values) => {
-      const saved = await saveArticle(values);
-      if (!saved.ok || !saved.id || !saved.updatedAt) {
-        setTransitionMessage(saved.message);
-        return;
-      }
-      form.reset({ ...values, id: saved.id, expectedUpdatedAt: saved.updatedAt });
-      startTransition(async () => {
-        const result = await transitionArticle({ articleId: saved.id, targetStatus });
+  const publish = (targetStatus: "in_review" | "approved" | "published" | "draft" | "archived" | "scheduled") => {
+    if (changingStatusRef.current) return;
+    changingStatusRef.current = true;
+    setTransitionMessage("");
+    startTransition(async () => {
+      try {
+        const saved = await persistRef.current(true);
+        if (!saved?.ok || !saved.id) {
+          setTransitionMessage("The review must save successfully before its status can change. Check the save message and highlighted fields.");
+          return;
+        }
+        const result = await transitionArticle({ articleId: saved.id, targetStatus, scheduledLocal });
         setTransitionMessage(result.message);
-        if (result.ok) router.refresh();
-      });
-    })();
-  };
-  const schedule = () => {
-    void form.handleSubmit(async (values) => {
-      const saved = await saveArticle(values);
-      if (!saved.ok || !saved.id || !saved.updatedAt) {
-        setTransitionMessage(saved.message);
-        return;
-      }
-      form.reset({ ...values, id: saved.id, expectedUpdatedAt: saved.updatedAt });
-      startTransition(async () => {
-        const result = await transitionArticle({ articleId: saved.id, targetStatus: "scheduled", scheduledLocal });
-        setTransitionMessage(result.message);
-        if (result.ok) router.refresh();
-      });
-    })();
+        if (result.ok) {
+          if (!article) router.replace(`/admin/reviews/${saved.id}?tab=publishing`);
+          else router.refresh();
+        }
+      } catch (error) {
+        setTransitionMessage(error instanceof Error ? error.message : "Could not change publication status. Please retry.");
+      } finally { changingStatusRef.current = false; }
+    });
   };
 
   return <>
@@ -288,10 +327,20 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
     {visits.length > 0 && <section className="cms-panel cms-panel-body" aria-label="Visits for this review"><h2>Visits and receipts</h2>{visits.map((visit) => <p key={visit.id}><Link href={`/admin/visits/${visit.id}/edit`}>Edit visit from {visit.visited_at}</Link></p>)}</section>}
     <div className="cms-editor-layout">
       <section className="cms-panel">
-        <nav className="cms-tabs" aria-label="Article editor sections">
-          {(["content", "photos", "seo", "publishing"] as const).map((value) => <button key={value} aria-selected={tab === value} onClick={() => setTab(value)} role="tab" type="button">{value[0].toUpperCase() + value.slice(1)}</button>)}
+        <nav className="cms-tabs" role="tablist" aria-label="Review editor sections">
+          {editorTabs.map(({ id, label }, index) => <button key={id} disabled={isTransitioning} id={`${editorId}-tab-${id}`} aria-controls={`${editorId}-panel`} aria-selected={tab === id} tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} onKeyDown={(event) => {
+            const next = event.key === "ArrowRight" ? (index + 1) % editorTabs.length
+              : event.key === "ArrowLeft" ? (index + editorTabs.length - 1) % editorTabs.length
+              : event.key === "Home" ? 0 : event.key === "End" ? editorTabs.length - 1 : null;
+            if (next === null) return;
+            event.preventDefault();
+            setTab(editorTabs[next].id);
+            document.getElementById(`${editorId}-tab-${editorTabs[next].id}`)?.focus();
+          }} role="tab" type="button">{label}</button>)}
         </nav>
-        <form onSubmit={(event) => { event.preventDefault(); void persistRef.current(); }}>
+        <form noValidate onSubmit={(event) => { event.preventDefault(); void persistRef.current(true); }}>
+          <fieldset className="cms-editor-fields" disabled={isTransitioning}>
+          <div id={`${editorId}-panel`} role="tabpanel" aria-labelledby={`${editorId}-tab-${tab}`}>
           {tab === "content" && <>
             <section className="cms-review-section"><h2>The basics</h2><p className="cms-muted">Identify the visit and the place. Drafts can stay unlinked; publishing requires a matching place.</p>
             <div className="cms-form-grid">
@@ -339,32 +388,49 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
           {tab === "photos" && <ReviewPhotos media={availableMedia} photos={template.gallery} featuredMediaId={featuredMediaId}
             onCoverChange={(id) => form.setValue("featuredMediaId", id, { shouldDirty: true })}
             onChange={(photos) => form.setValue("reviewTemplate.gallery", photos, { shouldDirty: true, shouldValidate: true })} />}
-          {tab === "seo" && <div className="cms-form-grid">
-            <InputField className="cms-form-span" label="SEO title" maxLength={70} {...form.register("seoTitle")} />
-            <InputField className="cms-form-span" label="Meta description" maxLength={180} {...form.register("metaDescription")} />
-            <InputField className="cms-form-span" label="Canonical URL (HTTPS)" {...form.register("canonicalUrl")} />
-            <label className="cms-field cms-form-span"><span className="cms-label">Social sharing image</span><select {...form.register("openGraphMediaId")}><option value="">Use featured image</option>{availableMedia.map((item) => <option key={item.id} value={item.id}>{item.altText || item.caption || item.id}</option>)}</select></label>
-            <InputField label="Primary keyword" {...form.register("primaryKeyword")} />
-            <InputField label="Secondary keywords (comma-separated)" {...form.register("secondaryKeywords")} />
-            <label className="cms-field cms-form-span"><span className="cms-label">Internal linking notes</span><textarea {...form.register("internalLinkingNotes")} /></label>
-            <label className="cms-checkbox-field cms-form-span"><input type="checkbox" {...form.register("indexingEnabled")} /> Allow search engines to index this article once published</label>
-            <div className="cms-form-span cms-seo-preview"><b>{seoTitle || title || "Article title preview"}</b><a href="#">{`https://vegasunfiltered.com/${slug || "article-slug"}`}</a><p>{metaDescription || "Add a concise description to preview how this story may appear in search results."}</p></div>
-          </div>}
-          {tab === "publishing" && <div className="cms-panel-body">
-            <div className="cms-alert"><span>Review status: <b>{status.replace("_", " ")}</b>. Scheduled publication requires the configured hourly Vercel Cron endpoint.</span></div>
-            <label className="cms-field"><span className="cms-label">Schedule for (Las Vegas time)</span><input onChange={(event) => setScheduledLocal(event.target.value)} type="datetime-local" value={scheduledLocal} /></label>
+          {tab === "seo" && <section className="cms-review-section">
+            <h2>Search and social sharing</h2>
+            <p className="cms-muted">Control how this review is described in search results and link previews. These fields do not publish the review.</p>
+            <div className="cms-form-grid">
+              <InputField className="cms-form-span" label="SEO title" maxLength={70} placeholder={title ? `${title} | ${SITE_NAME}` : "Uses your headline when left blank"} help={`${seoTitle.length}/70 characters. Leave blank to use the headline and site name.`} error={form.formState.errors.seoTitle?.message} {...form.register("seoTitle")} />
+              <label className="cms-field cms-form-span"><span className="cms-label">Meta description</span><textarea aria-label="Meta description" maxLength={180} placeholder="A concise, honest summary of what readers will learn." {...form.register("metaDescription")} /><small>{metaDescription.length}/180 characters. Leave blank to use the subtitle.</small>{form.formState.errors.metaDescription && <small className="cms-form-error">{form.formState.errors.metaDescription.message}</small>}</label>
+              <div className="cms-form-span cms-seo-preview" aria-label="Search result preview"><small>SEARCH RESULT PREVIEW</small><b>{previewTitle}</b><span className="cms-seo-url">{previewUrl}</span><p>{previewDescription || "Add a description or subtitle to preview the search summary."}</p><small>Search engines may display a different title or summary.</small></div>
+              <InputField className="cms-form-span" label="Canonical URL (HTTPS)" type="url" placeholder={defaultUrl} help={`Optional. Leave blank to use ${defaultUrl}. Only override this when another URL is the original version.`} error={form.formState.errors.canonicalUrl?.message} {...form.register("canonicalUrl")} />
+              <label className="cms-field cms-form-span"><span className="cms-label">Social sharing image</span><select aria-label="Social sharing image" {...form.register("openGraphMediaId")}><option value="">Use featured image</option>{availableMedia.map((item) => <option key={item.id} value={item.id}>{item.altText || item.caption || item.id}</option>)}</select><small>Uses the featured image when no separate social image is selected.</small></label>
+              {sharingImage && <div className="cms-social-preview cms-form-span"><Image src={sharingImage.url} alt={sharingImage.altText || "Selected social sharing image"} width={160} height={84} unoptimized /><span>{sharingImage.altText || sharingImage.caption || "Selected sharing image"}</span></div>}
+              <InputField label="Primary keyword" maxLength={100} help="Your main topic for editorial planning." error={form.formState.errors.primaryKeyword?.message} {...form.register("primaryKeyword")} />
+              <InputField label="Secondary keywords (comma-separated)" maxLength={500} help="Related topics for editorial planning." error={form.formState.errors.secondaryKeywords?.message} {...form.register("secondaryKeywords")} />
+              <label className="cms-field cms-form-span"><span className="cms-label">Internal linking notes</span><textarea aria-label="Internal linking notes" maxLength={5000} {...form.register("internalLinkingNotes")} /><small>Private reminders. Add the actual links in your review text.</small></label>
+              <div className="cms-form-span"><label className="cms-checkbox-field"><input type="checkbox" {...form.register("indexingEnabled")} /> Allow search engines to index this article once published</label><p className="cms-muted">{indexingEnabled ? "Once published, this review can appear in search and site listings. Search engines decide when to index it." : "Once published, this review will be marked noindex and excluded from the sitemap and public review listings. Its direct URL will still be public."} Drafts and private previews remain private.</p></div>
+            </div>
+          </section>}
+          {tab === "publishing" && <div className="cms-review-section">
+            <h2>Review and publication</h2>
+            <p className="cms-muted">Save your review, submit it for review, then approve it before publishing. Each action saves your latest edits first.</p>
+            <div className="cms-alert">Review status: <b>{status.replace("_", " ")}</b>.</div>
+            {canPublish && !selectedPlaceId && <p className="cms-alert">Before publishing or scheduling, choose a matching place in Content. You can save and submit an unlinked draft.</p>}
+            <p className="cms-muted">{indexingEnabled ? "Search indexing is enabled for publication." : "Search indexing is off. Enable it in SEO to include the published review in search and public listings."}</p>
+            {status === "published" && <p className="cms-alert">Saving changes updates the live review immediately.</p>}
+            {status === "scheduled" && article?.scheduled_at && <p>Scheduled for {new Date(article.scheduled_at).toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" })} (Las Vegas time).</p>}
+            {canPublish && (status === "approved" || status === "scheduled") && <>
+              <label className="cms-field"><span className="cms-label">Schedule for (Las Vegas time)</span><input disabled={!schedulingConfigured} onChange={(event) => setScheduledLocal(event.target.value)} type="datetime-local" value={scheduledLocal} /></label>
+              <p className="cms-muted">{schedulingConfigured ? "Scheduled reviews publish on the first hourly publishing run after the selected time." : "Automatic publishing is unavailable in this environment. You can publish an approved review manually."}</p>
+            </>}
             <div className="cms-heading-actions">
               {status === "draft" && <button className="cms-secondary-button" onClick={() => publish("in_review")} type="button">Submit for review</button>}
-              {(role === "owner" || role === "editor") && status === "in_review" && <button className="cms-secondary-button" onClick={() => publish("approved")} type="button">Approve for publication</button>}
-              {(role === "owner" || role === "editor") && (status === "approved" || status === "scheduled") && <button className="cms-primary-button" onClick={() => publish("published")} type="button">Publish now</button>}
-              {(role === "owner" || role === "editor") && (status === "approved" || status === "scheduled") && <button className="cms-secondary-button" onClick={schedule} type="button">Schedule</button>}
-              {(role === "owner" || role === "editor") && status === "published" && <button className="cms-secondary-button" onClick={() => publish("draft")} type="button">Unpublish</button>}
-              {(role === "owner" || role === "editor") && status !== "archived" && <button className="cms-secondary-button" onClick={() => publish("archived")} type="button">Archive</button>}
+              {canPublish && status === "in_review" && <button className="cms-secondary-button" onClick={() => publish("approved")} type="button">Approve for publication</button>}
+              {canPublish && status === "approved" && <button className="cms-primary-button" onClick={() => publish("published")} type="button">Publish now</button>}
+              {canPublish && (status === "approved" || status === "scheduled") && <button className="cms-secondary-button" disabled={!schedulingConfigured || !scheduledLocal} onClick={() => publish("scheduled")} type="button">Schedule</button>}
+              {canPublish && status === "published" && <button className="cms-secondary-button" onClick={() => publish("draft")} type="button">Unpublish</button>}
+              {canPublish && ["in_review", "approved", "scheduled", "archived"].includes(status) && <button className="cms-secondary-button" onClick={() => publish("draft")} type="button">{status === "scheduled" ? "Cancel schedule and return to draft" : "Return to draft"}</button>}
+              {canPublish && ["draft", "in_review", "approved", "published"].includes(status) && <button className="cms-secondary-button" onClick={() => publish("archived")} type="button">Archive</button>}
             </div>
             {transitionMessage && <p className="cms-alert" role="status">{transitionMessage}</p>}
-            <p className="cms-muted">Publishing and review actions are available only to roles authorized by the server policy.</p>
+            {!canPublish && <p className="cms-muted">You can submit your draft for review. An editor or owner approves and publishes it.</p>}
           </div>}
-          <div className="cms-save-row"><span className="cms-save-state" data-state={saveMessage === "All changes saved" ? "saved" : "pending"} role="status">{form.formState.isDirty && ["All changes saved", "New draft"].includes(saveMessage) ? "Unsaved changes" : saveMessage}</span><button className="cms-primary-button" disabled={isTransitioning || saveMessage === "Saving…"} type="submit">{isTransitioning ? "Changing status…" : saveMessage === "Saving…" ? "Saving…" : "Save draft"}</button></div>
+          </div>
+          <div className="cms-save-row"><span className="cms-save-state" data-state={saveMessage === "All changes saved" ? "saved" : "pending"} role="status">{form.formState.isDirty && ["All changes saved", "New draft"].includes(saveMessage) ? "Unsaved changes" : saveMessage}</span><button className="cms-primary-button" disabled={isTransitioning || saveMessage === "Saving…"} type="submit">{isTransitioning ? "Changing status…" : saveMessage === "Saving…" ? "Saving…" : status === "draft" ? "Save draft" : "Save changes"}</button></div>
+          </fieldset>
         </form>
         {tab === "photos" && <section className="cms-review-section"><h2>Upload a photo</h2><p className="cms-muted">Uploads are added to the shared media library and this review gallery. Save the review to keep its photo selections. Removing a gallery photo does not delete the original.</p>
           {template.gallery.length >= 50 ? <p className="cms-alert">Remove a gallery photo before uploading another here, or use the main Media library.</p> : <MediaUploadForm onUploaded={(image) => {
@@ -381,6 +447,7 @@ export function ArticleEditor({ article, media, restaurants, neighborhoods, init
   </>;
 }
 
-function InputField({ label, className = "", error, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
-  return <label className={`cms-field ${className}`}><span className="cms-label">{label}</span><input {...props} />{error && <small className="cms-form-error">{error}</small>}</label>;
+function InputField({ label, className = "", error, help, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; help?: string }) {
+  const id = useId();
+  return <label className={`cms-field ${className}`}><span className="cms-label">{label}</span><input {...props} aria-label={label} aria-invalid={Boolean(error)} aria-describedby={error || help ? `${id}-help` : undefined} />{(error || help) && <small id={`${id}-help`} className={error ? "cms-form-error" : undefined}>{error || help}</small>}</label>;
 }

@@ -12,7 +12,7 @@ import { readReviewTemplate } from "@/lib/review-template";
 
 type Props = {
   params: Promise<{ path: string[] }>;
-  searchParams: Promise<{ place?: string; review?: string }>;
+  searchParams: Promise<{ place?: string; review?: string; tab?: string }>;
 };
 type EditorMedia = { id: string; url: string; altText: string; caption: string; credit: string };
 
@@ -35,6 +35,8 @@ async function AdminSectionContent({ params, searchParams }: Props) {
   }
 
   const query = await searchParams;
+  const initialTab = query.tab === "seo" || query.tab === "photos" || query.tab === "publishing" ? query.tab : "content";
+  const schedulingConfigured = Boolean(process.env.CRON_SECRET && process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (path[0] === "reviews") {
     if (path.length === 1) return <CmsPage section="articles" />;
     if (path.length === 2 && path[1] === "new") {
@@ -43,7 +45,7 @@ async function AdminSectionContent({ params, searchParams }: Props) {
         loadMedia(access.client),
         loadArticleContext(access.client, access.identity.role),
       ]);
-      return <ArticleEditor recoveryUserId={access.identity.id} categories={categories} media={media} {...context} initialPlaceId={query.place} role={access.identity.role} />;
+      return <ArticleEditor recoveryUserId={access.identity.id} categories={categories} media={media} {...context} initialPlaceId={query.place} initialTab={initialTab} schedulingConfigured={schedulingConfigured} role={access.identity.role} />;
     }
     const editId = path.length === 2 && path[1] !== "new"
       ? path[1]
@@ -71,7 +73,7 @@ async function AdminSectionContent({ params, searchParams }: Props) {
         const values = Array.isArray(row.tags) ? row.tags : row.tags ? [row.tags] : [];
         return values.flatMap((tag: unknown) => typeof tag === "object" && tag !== null && "name" in tag && typeof tag.name === "string" ? [tag.name] : []);
       }).join(", ");
-      return <ArticleEditor recoveryUserId={access.identity.id} article={{ ...data, tags }} categories={categories} media={media} {...context} visits={visits.data ?? []} role={access.identity.role} />;
+      return <ArticleEditor recoveryUserId={access.identity.id} article={{ ...data, tags }} categories={categories} media={media} {...context} visits={visits.data ?? []} initialTab={initialTab} schedulingConfigured={schedulingConfigured} role={access.identity.role} />;
     }
     if (path.length === 3 && path[2] === "preview") {
       const { data, error } = await access.client.from("articles")

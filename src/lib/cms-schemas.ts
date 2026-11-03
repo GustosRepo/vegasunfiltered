@@ -191,9 +191,9 @@ export type ReviewPhoto = z.infer<typeof reviewPhotoSchema>;
 export const articleDraftSchema = z.object({
   id: z.string().uuid().optional(),
   expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
-  title: z.string().trim().min(3).max(160),
+  title: z.string().trim().min(3, "Enter a headline with at least 3 characters.").max(160),
   subtitle: z.string().trim().max(240),
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase words separated by hyphens, for example spring-valley-dinner."),
   kind: z.enum([
     "editorial_story",
     "restaurant_review",
@@ -215,7 +215,11 @@ export const articleDraftSchema = z.object({
   tags: z.string().max(500),
   seoTitle: z.string().trim().max(70),
   metaDescription: z.string().trim().max(180),
-  canonicalUrl: z.string().trim().max(2048),
+  canonicalUrl: z.string().trim().max(2048).refine((value) => {
+    if (!value) return true;
+    try { return new URL(value).protocol === "https:"; }
+    catch { return false; }
+  }, "Enter a valid HTTPS URL, or leave blank to use the review's own URL."),
   primaryKeyword: z.string().trim().max(100),
   secondaryKeywords: z.string().max(500),
   internalLinkingNotes: z.string().max(5000),

@@ -16,6 +16,9 @@ import { RestaurantDirectory } from "@/components/admin/restaurant-directory";
 import { saveAffiliateLink, setAffiliateLinkActive } from "@/app/actions/affiliate-links";
 import { reviewSection } from "@/lib/content";
 import { reviewPlainText } from "@/lib/review-template";
+import { articleDraftSchema } from "@/lib/cms-schemas";
+import { SITE_NAME } from "@/lib/site";
+import { saveEditorialProfile } from "@/app/actions/profile";
 
 type Section = "articles" | "restaurants" | "visits" | "media" | "neighborhoods" | "seo" | "analytics" | "team" | "settings" | "affiliates";
 
@@ -26,7 +29,7 @@ const heading: Record<Section, { title: string; description: string }> = {
   media: { title: "Media library", description: "Manage editorial images, alt text, captions, and credits." },
   neighborhoods: { title: "Neighborhoods", description: "Maintain the local context used by guides and reviews." },
   seo: { title: "SEO audit", description: "Review concrete metadata and indexing issues before publication." },
-  analytics: { title: "Analytics", description: "Reporting integrations are intentionally shown as unavailable until wired." },
+  analytics: { title: "Analytics", description: "Check the connection status for analytics and search performance reporting." },
   team: { title: "Team", description: "Manage invited editorial accounts and their CMS roles." },
   settings: { title: "Settings", description: "Check publication identity, integrations, and publishing configuration." },
   affiliates: { title: "Affiliate links", description: "Manage disclosed partner links associated with published stories." },
@@ -228,7 +231,7 @@ async function SeoAudit() {
   const access = await requireAdminPage();
   if (access.state !== "authenticated") return null;
   const { data, error } = await access.client.from("articles")
-    .select("id,title,slug,subtitle,status,review_type,is_indexable,content,featured_media_id,category:categories(slug),author:profiles(display_name),featured:media!articles_featured_media_fk(alt_text),seo:article_seo(seo_title,meta_description,canonical_url,indexing_enabled)")
+    .select("id,title,slug,subtitle,status,review_type,is_indexable,content,featured_media_id,category:categories(slug),author:profiles(id,display_name),featured:media!articles_featured_media_fk(alt_text),seo:article_seo(seo_title,meta_description,canonical_url,indexing_enabled)")
     .order("updated_at", { ascending: false }).limit(1000);
   if (error) throw new Error(`Could not run article SEO audit: ${error.message}`);
   const articles = data ?? [];
@@ -238,8 +241,8 @@ async function SeoAudit() {
   for (const article of articles) {
     const seo = Array.isArray(article.seo) ? article.seo[0] : article.seo;
     for (const [map, value] of [
-      [titleCounts, seo?.seo_title],
-      [descriptionCounts, seo?.meta_description],
+      [titleCounts, seo?.seo_title?.trim() || `${article.title} | ${SITE_NAME}`],
+      [descriptionCounts, seo?.meta_description?.trim() || article.subtitle],
       [slugCounts, article.slug],
     ] as const) {
       if (value?.trim()) map.set(value.trim().toLowerCase(), (map.get(value.trim().toLowerCase()) ?? 0) + 1);
@@ -271,33 +274,36 @@ async function SeoAudit() {
     const seo = Array.isArray(article.seo) ? article.seo[0] : article.seo;
     const featured = Array.isArray(article.featured) ? article.featured[0] : article.featured;
     const author = Array.isArray(article.author) ? article.author[0] : article.author;
-    const checks: string[] = [];
-    if (article.status === "published" && !article.is_indexable) checks.push("Published article is marked noindex");
-    if (article.status === "published" && !seo?.indexing_enabled) checks.push("SEO indexing is disabled");
-    if (!seo?.seo_title?.trim()) checks.push("SEO title is empty");
-    else if (seo.seo_title.length > 60) checks.push(`SEO title is ${seo.seo_title.length} characters (over 60)`);
-    if (seo?.seo_title?.trim() && titleCounts.get(seo.seo_title.trim().toLowerCase())! > 1) checks.push("SEO title is duplicated");
-    if (!seo?.meta_description?.trim()) checks.push("Meta description is empty");
-    else if (seo.meta_description.length > 160) checks.push(`Meta description is ${seo.meta_description.length} characters (over 160)`);
-    if (seo?.meta_description?.trim() && descriptionCounts.get(seo.meta_description.trim().toLowerCase())! > 1) checks.push("Meta description is duplicated");
-    if (slugCounts.get(article.slug.toLowerCase())! > 1) checks.push("URL slug is duplicated");
-    if (!seo?.canonical_url?.trim()) checks.push("Canonical URL is not explicitly configured");
-    else if (!seo.canonical_url.startsWith("https://")) checks.push("Canonical URL does not use HTTPS");
-    if (!article.featured_media_id) checks.push("Featured image is missing");
-    else if (!featured?.alt_text?.trim()) checks.push("Featured image is missing alt text");
-    if (!author?.display_name?.trim()) checks.push("Author attribution is missing");
+    const checks: { message: string; href: string }[] = [];
+    const addIssue = (message: string, tab: "content" | "photos" | "seo" = "seo") => {
+      checks.push({ message, href: `/admin/reviews/${article.id}/edit?tab=${tab}` });
+    };
+    if (article.status === "published" && !article.is_indexable) addIssue("Published article is marked noindex");
+    if (article.status === "published" && !seo?.indexing_enabled) addIssue("SEO indexing is disabled");
+    const effectiveTitle = seo?.seo_title?.trim() || `${article.title} | ${SITE_NAME}`;
+    const effectiveDescription = seo?.meta_description?.trim() || article.subtitle;
+    if (seo?.seo_title && seo.seo_title.length > 70) addIssue(`SEO title exceeds the editor's 70-character limit`);
+    if (titleCounts.get(effectiveTitle.toLowerCase())! > 1) addIssue("Search title is duplicated");
+    if (!effectiveDescription?.trim()) addIssue("Add a meta description or subtitle for the search summary");
+    else if (seo?.meta_description && seo.meta_description.length > 180) addIssue(`Meta description exceeds the editor's 180-character limit`);
+    if (effectiveDescription?.trim() && descriptionCounts.get(effectiveDescription.trim().toLowerCase())! > 1) addIssue("Search description is duplicated");
+    if (slugCounts.get(article.slug.toLowerCase())! > 1) addIssue("URL slug is duplicated", "content");
+    if (!articleDraftSchema.shape.canonicalUrl.safeParse(seo?.canonical_url ?? "").success) addIssue("Canonical URL must be a valid HTTPS URL");
+    if (!article.featured_media_id) addIssue("Featured image is missing", "photos");
+    else if (!featured?.alt_text?.trim()) checks.push({ message: "Featured image is missing alt text", href: "/admin/media" });
+    if (!author?.display_name?.trim()) checks.push({ message: "Author attribution is missing", href: author?.id === access.identity.id ? "/admin/settings#author-profile" : "/admin/team" });
     const contentText = reviewPlainText(article.content);
-    if (contentText.trim().length < 200) checks.push("Article body contains very little text");
+    if (contentText.trim().length < 200) addIssue("Article body contains very little text", "content");
     for (const href of outboundLinks.get(article.id) ?? []) {
       const target = href.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
       if (!knownStaticPaths.has(target) && !knownCmsPaths.has(target) && !target.startsWith("/admin")) {
-        checks.push(`Internal link target may be broken: ${target}`);
+        addIssue(`Internal link target may be broken: ${target}`, "content");
       }
     }
-    return checks.map((message) => ({ id: article.id, title: article.title || "Untitled article", status: article.status, message }));
+    return checks.map((issue) => ({ id: article.id, title: article.title || "Untitled review", status: article.status, ...issue }));
   });
   return <section className="cms-panel"><div className="cms-panel-header"><h2>Article metadata checks</h2><p>{issues.length} items to review</p></div>
-    {issues.length ? <ul className="cms-list">{issues.map((issue, index) => <li key={`${issue.id}-${issue.message}-${index}`}><AlertTriangle aria-hidden="true" size={15} /><span><Link href={`/admin/reviews/${issue.id}/edit`}><b>{issue.title}</b></Link> · {issue.message}<small className="cms-table-subtitle">{issue.status}</small></span></li>)}</ul> : <div className="cms-empty"><strong>No issues found in the latest 1,000 articles</strong>The audit checks CMS metadata and article links; it is not an external crawler and does not infer a Google ranking threshold.</div>}
+    {issues.length ? <ul className="cms-list">{issues.map((issue, index) => <li key={`${issue.id}-${issue.message}-${index}`}><AlertTriangle aria-hidden="true" size={15} /><span><Link href={issue.href}><b>{issue.title}</b></Link> · {issue.message}<small className="cms-table-subtitle">{issue.status}</small></span></li>)}</ul> : <div className="cms-empty"><strong>No issues found in the latest 1,000 articles</strong>The audit checks CMS metadata and article links; it is not an external crawler and does not infer a Google ranking threshold.</div>}
   </section>;
 }
 
@@ -350,7 +356,7 @@ async function TeamStatus() {
   const { data, error } = await access.client.from("profiles").select("id,email,display_name,role,created_at").order("created_at");
   if (error) throw new Error(`Could not load team members: ${error.message}`);
   const adminConfigured = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  return <><section className="cms-panel"><div className="cms-panel-header"><h2>Editorial team</h2><p>{data?.length ?? 0} active profiles</p></div><div className="cms-table-wrap"><table className="cms-table"><thead><tr><th>MEMBER</th><th>EMAIL</th><th>ROLE</th><th>JOINED</th></tr></thead><tbody>
+  return <><section className="cms-panel"><div className="cms-panel-header"><h2>Editorial team</h2><p>{data?.length ?? 0} active profiles</p></div><p className="cms-panel-body cms-muted">Each teammate manages their public author name in <Link href="/admin/settings#author-profile">Settings</Link>. Owners manage editorial roles here.</p><div className="cms-table-wrap"><table className="cms-table"><thead><tr><th>MEMBER</th><th>EMAIL</th><th>ROLE</th><th>JOINED</th></tr></thead><tbody>
     {data?.map((member) => <tr key={member.id}><td>{member.display_name || "—"}</td><td>{member.email}</td><td>{access.identity.role === "owner" && member.role !== "owner" ? <FormWithFeedback action={updateTeamRole} className="cms-inline-role-form"><input name="userId" type="hidden" value={member.id} /><select aria-label={`Role for ${member.email}`} defaultValue={member.role} name="role"><option value="contributor">Contributor</option><option value="editor">Editor</option></select></FormWithFeedback> : <span className="cms-status-badge">{member.role}</span>}</td><td>{new Date(member.created_at).toLocaleDateString()}</td></tr>)}
   </tbody></table></div></section>
   <section className="cms-panel"><div className="cms-panel-header"><h2>Invite a teammate</h2></div><div className="cms-panel-body">{access.identity.role !== "owner" ? <p className="cms-alert">Only an owner can invite team members.</p> : adminConfigured ? <FormWithFeedback action={inviteTeamMember} className="cms-form-grid">
@@ -364,16 +370,23 @@ async function SettingsStatus() {
   const access = await requireAdminPage();
   if (access.state !== "authenticated") return null;
   const env = getSupabaseEnvironment();
+  const { data: profile, error: profileError } = await access.client.from("profiles")
+    .select("display_name").eq("id", access.identity.id).single();
+  if (profileError) throw new Error(`Could not load your author profile: ${profileError.message}`);
   const rows = [
     ["CMS database", env ? "Connected configuration detected" : "Not configured"],
     ["Current account", `${access.identity.email} · ${access.identity.role}`],
-    ["Scheduled publishing", "Manual — no scheduler has been configured"],
+    ["Scheduled publishing", process.env.CRON_SECRET && process.env.SUPABASE_SERVICE_ROLE_KEY ? "Publishing endpoint credentials configured. Automatic runs require the deployed hourly cron." : "Automatic publishing unavailable — publish approved reviews manually"],
     ["Analytics", "Not connected"],
     ["Public site", "https://vegasunfiltered.com"],
   ];
-  return <section className="cms-panel"><div className="cms-panel-header"><h2>Publication settings</h2></div><dl className="cms-settings-list">{rows.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl><div className="cms-panel-body"><p className="cms-muted">This CMS has no user-editable settings yet. Environment and database configuration are documented in the project README.</p></div></section>;
+  return <><section className="cms-panel" id="author-profile"><div className="cms-panel-header"><h2>Your author profile</h2></div>
+    <FormWithFeedback action={saveEditorialProfile} className="cms-panel-body cms-form-grid" submitLabel="Save author profile">
+      <Field label="Public author name" name="displayName" defaultValue={profile.display_name} required help="Shown as the byline on reviews you author. Choose the name you want readers to see." className="cms-form-span" />
+    </FormWithFeedback>
+  </section><section className="cms-panel"><div className="cms-panel-header"><h2>Publication settings</h2></div><dl className="cms-settings-list">{rows.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl><div className="cms-panel-body"><p className="cms-muted">Publishing credentials and reporting integrations are managed in deployment settings. Setup instructions are in the project README.</p></div></section></>;
 }
 
 function Field({ label, name, defaultValue, type = "text", required = false, multiline = false, help, className = "" }: { label: string; name: string; defaultValue: string; type?: string; required?: boolean; multiline?: boolean; help?: string; className?: string }) {
-  return <label className={`cms-field ${className}`}><span className="cms-label">{label}</span>{multiline ? <textarea defaultValue={defaultValue} name={name} required={required} /> : <input defaultValue={defaultValue} name={name} required={required} type={type} />}{help && <small>{help}</small>}</label>;
+  return <label className={`cms-field ${className}`}><span className="cms-label">{label}</span>{multiline ? <textarea aria-label={label} defaultValue={defaultValue} name={name} required={required} /> : <input aria-label={label} defaultValue={defaultValue} name={name} required={required} type={type} />}{help && <small>{help}</small>}</label>;
 }
