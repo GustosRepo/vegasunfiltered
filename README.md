@@ -288,6 +288,10 @@ as evidence that the migration was applied to hosted Supabase.
    article publishes after its time in the deployed environment.
 
 Media uploads go directly from the signed-in browser to Supabase Storage.
+Next.js image optimization allows only the configured `NEXT_PUBLIC_SUPABASE_URL`
+origin's public `editorial-media` bucket. This lets review cards load CMS photos
+without allowing unrelated projects, private buckets, or signed URLs. Keep that
+public origin set during the production build and redeploy after changing it.
 Editorial images are public; receipts use the private `private-receipts` bucket.
 An optional public receipt must be redacted before upload—the CMS does not
 redact or verify personal information in that image. Never place card details,

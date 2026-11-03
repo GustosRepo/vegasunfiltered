@@ -2,6 +2,21 @@
 
 Last updated: 2026-11-03
 
+## Supabase review-card image fix (November 3)
+
+- Reproduced the live `/_next/image` 400 while the original Supabase photo
+  returned 200. The optimizer had no remote image allowlist.
+- Added an environment-derived allowlist for the configured Supabase origin's
+  public `editorial-media` bucket, with no query strings. Other origins, buckets,
+  signed URLs, protocols, and ports remain outside that pattern.
+- Verified the exact reported photo through the corrected local optimizer at
+  both 1200px and 1920px: HTTP 200 with valid JPEG responses. Added a regression
+  check against the actual Next.js configuration and remote-pattern matcher.
+- Validation: production build, TypeScript, whitespace checks, and all 102
+  public/editor/model/config tests passed.
+- The configuration change requires a new production deployment; the live
+  deployment was not changed by this workflow.
+
 ## Canonical URL repair (November 3)
 
 - Cleared the manually saved `https://vegasunfiltered.com/tacos-el-gordo`
