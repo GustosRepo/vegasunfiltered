@@ -2,6 +2,37 @@
 
 Last updated: 2026-11-03
 
+## Article cover labels (November 3)
+
+- Made the development-artwork badge opt-in in the shared image component.
+  Article/card covers no longer inherit it; the homepage development illustration
+  explicitly retains its badge. AGENTS documents the distinction for future work.
+- Updated the shared image's deprecated `priority` prop to Next.js `preload`.
+  These changes are local and require deployment.
+- Validation: production build, TypeScript, whitespace checks, and all 113
+  isolated public/editor/model/config/advertising tests passed.
+
+## Shared In-article ad unit (November 3)
+
+- Integrated the owner-supplied publisher `ca-pub-8863066373093222` and fluid
+  In-article unit `5213709246` once after Our experience in the shared renderer.
+  Public indexable reviews qualify with two nonempty experience paragraphs and
+  100 words. Previews, unindexed/short/empty reviews, and other pages load no unit.
+- Loads the provider asynchronously once per document and initializes each
+  mounted unit after the library is ready and its width is usable. Cached pages
+  retain filled units without a repeat request. Hidden pending units are excluded
+  if navigation precedes the library load; there are no timer refreshes.
+- Reserved responsive space, labeled the placement, collapsed unfilled units,
+  and removed failed/blocked placements. Updated the public Privacy page and
+  documented account-managed Google Privacy & messaging and serving prerequisites.
+- Browser verification uses a mock provider, never real ads. Desktop/mobile
+  placement and cached navigation were visually checked with no horizontal
+  overflow. Application changes are local and require deployment; live ad serving
+  and account consent-message publication have not been verified.
+- Validation: production build, TypeScript, targeted lint, whitespace checks,
+  and all 113 public/editor/model/config/advertising tests passed, including
+  slow-script navigation, cached return visits, blocked scripts, and no fill.
+
 ## Supabase review-card image fix (November 3)
 
 - Reproduced the live `/_next/image` 400 while the original Supabase photo

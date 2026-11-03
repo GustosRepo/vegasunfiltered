@@ -8,7 +8,7 @@ const publicOnly = process.env.E2E_PUBLIC_ONLY === "1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testIgnore: publicOnly ? ["**/cms.spec.ts", "**/permissions.spec.ts"] : ["**/review-template-ui.spec.ts"],
+  testIgnore: publicOnly ? ["**/cms.spec.ts", "**/permissions.spec.ts"] : ["**/review-template-ui.spec.ts", "**/advertising.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -24,7 +24,7 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", testMatch: ["**/public.spec.ts", "**/review-template-ui.spec.ts"], use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
+    { name: "mobile", testMatch: ["**/public.spec.ts", "**/review-template-ui.spec.ts", "**/advertising.spec.ts"], use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
   ],
   webServer: {
     command: `node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3100`,

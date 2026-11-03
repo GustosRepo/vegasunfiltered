@@ -414,28 +414,46 @@ The public site can still run without Supabase; CMS-backed articles and admin
 data require the public Supabase URL and publishable key described above. The
 newsletter remains an inactive status panel. Before enabling signup, configure
 an email provider, server-side validation and consent handling, and update the
-Privacy page. Advertising, affiliate tracking, and analytics reporting are not
-configured. Sponsored labels, affiliate disclosure, and an opt-in ad slot
-component are available without loading tracking scripts.
+Privacy page. Public reviews use the manual AdSense unit described below.
+Affiliate tracking and separate visitor analytics/reporting are not configured.
+Sponsored labels and affiliate disclosures remain separate from display ads.
 
 ### Ads, analytics, and SEO measurement roadmap
 
-This is the agreed implementation scope, not a description of active services.
-The owner supplied AdSense publisher `ca-pub-8863066373093222`. Its account
-verification meta tag is installed in the public route layout only, not admin
-or login. A meta tag identifies the account; it does not load ads, collect
-consent, prove site approval, or authorize sellers through `ads.txt`.
-Google Privacy & messaging is the chosen CMP, but its messages and installation
-must still be configured/published in AdSense. The provided `adsbygoogle.js`
-script is intentionally not loaded until that consent integration is ready.
-Enable Consent Mode support and obtain the applicable account-generated consent
-tag/setup instructions. Use Google's documented consent callbacks rather than
-a homemade acceptance flag; test grant, denial, withdrawal, regional opt-outs,
-and blocked/failed CMP before enabling ad requests.
+The owner supplied AdSense publisher `ca-pub-8863066373093222` and In-article
+unit `5213709246`. The shared review template inserts one labeled unit after
+**Our experience** on public, indexable reviews with at least two nonempty
+experience paragraphs and 100 words. This is an editorial threshold, not a
+Google requirement. Private previews, short/empty reviews, and non-review pages
+load no ad unit or ad library. Existing reviews inherit the placement without
+editing their saved content.
 
-No analytics tag, consent manager, advertising network, or reporting connector
-has been installed. The admin Analytics screen currently checks configuration
-presence only; detecting credentials is not proof of data collection or reports.
+`ReviewInArticleAd` uses the supplied fluid In-article attributes, loads the
+AdSense library asynchronously through `next/script`, and initializes each
+mounted unit once after the library is ready and its width is usable. The
+library is shared across client navigation; the unit is keyed by review ID.
+Next.js keeps previously visited pages in Activity: a filled unit is preserved
+when returning to a cached review, without another request. Pending units on
+hidden pages are excluded from initialization if navigation beats script loading.
+There is no timer refresh or custom ad creative. The wrapper reserves responsive
+space, expands with fluid content, collapses for Google's `unfilled` status, and
+is removed if the library is blocked or fails to load.
+
+The account verification meta tag remains in the public route layout only.
+Google Privacy & messaging is the chosen CMP: publish the applicable messages
+and privacy settings in AdSense. The AdSense tag also delivers account-published
+messages, as described in [Google's Privacy & messaging documentation](https://support.google.com/adsense/answer/10924669).
+No homemade consent flag or forced consent grant is used. The account's approval,
+message publication, regional choices, and authorized `ads.txt` record cannot be
+verified from the repository and are not established by merely supplying ad code.
+The Privacy page now describes Google advertising and links to Google's data-use
+and ad-choice information.
+
+No separate analytics tag or reporting connector has been installed. The admin
+Analytics screen checks configuration presence only; detecting credentials is
+not proof of data collection or reports. Browser tests replace the ad library
+with a local mock, including filled, unfilled, blocked, and route-change cases;
+they never request or click live ads and do not certify actual consent behavior.
 
 #### Recommended measurement stack
 
@@ -502,15 +520,15 @@ instructions for installing the public GA4 tag.
 
 #### Phase 3: advertising
 
-- Evaluate Google AdSense as an initial option, or another publisher network
-  when its current eligibility and business terms fit. No provider is selected
-  or approved yet; do not promise acceptance, minimum traffic, or income.
+- Google AdSense and the owner-supplied In-article unit are implemented above.
+  Account approval and live delivery still require verification in AdSense;
+  do not promise acceptance, minimum traffic, or income.
 - Finish original content, public contact/privacy/disclosure pages, consent
   handling, and provider verification before enabling delivery. Publish
   `/ads.txt` only with the selected provider's exact authorized seller records;
   never invent publisher IDs or add placeholder authorization lines.
-- Wire the existing disabled `AdSlot` to actual provider placements with
-  explicit labels and reserved responsive dimensions. Start conservatively
+- The shared `AdSlot` now renders the supplied manual unit with explicit labels
+  and reserved responsive space. Keep placement conservative
   after substantive review content or below the article, not over the cover,
   verdict, navigation, or controls. Keep ads out of admin/private pages and
   empty/error pages. Do not insert slots into saved rich-text review content.

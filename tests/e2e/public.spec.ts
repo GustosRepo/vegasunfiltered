@@ -114,7 +114,7 @@ test("About page reflects the owner's perspective without invented identity clai
   await expect(page.getByRole("link", { name: "How I review", exact: true })).toHaveAttribute("href", "/editorial-policy");
 });
 
-test("AdSense verification is public-only and does not load advertising scripts", async ({ page }) => {
+test("non-review public pages expose only AdSense verification and admin stays free of ad code", async ({ page }) => {
   const adRequests: string[] = [];
   page.on("request", (request) => {
     if (/googlesyndication\.com|doubleclick\.net|fundingchoicesmessages\.google\.com/.test(request.url())) adRequests.push(request.url());

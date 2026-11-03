@@ -17,7 +17,7 @@ export default async function Home() {
     <main>
       <section className="home-hero" aria-labelledby="hero-title">
         <div className="hero-art-wrap">
-          <EditorialArt alt="Original development illustration of Las Vegas at dusk" className="hero-art" priority src="/art/las-vegas-night.svg" />
+          <EditorialArt alt="Original development illustration of Las Vegas at dusk" className="hero-art" priority showDevelopmentLabel src="/art/las-vegas-night.svg" />
         </div>
         <div className="hero-scrim" />
         <div className="hero-content page-shell">

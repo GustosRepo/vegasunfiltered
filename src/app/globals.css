@@ -263,7 +263,10 @@ a:hover .art-image { transform: scale(1.035); }
 .disclosure-note { padding: 15px 18px; border: 1px solid var(--line); font-size: 13px !important; }
 .disclosure-note a, .article-details a, .related-stories a { text-decoration: underline; text-underline-offset: 3px; }
 .ad-slot { margin: 35px 0; padding: 18px; border: 1px solid var(--line); }
-.ad-slot-label { display: block; margin-bottom: 10px; color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: .14em; }
+.ad-slot-label { display: block; margin-bottom: 10px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.ad-slot[data-placement="review-after-experience"] { width: 100%; min-width: 0; min-height: 280px; margin: 40px 0; padding: 16px 0; border: 0; border-block: 1px solid var(--line); text-align: center; }
+.ad-slot[data-placement="review-after-experience"] .adsbygoogle { width: 100%; }
+.ad-slot[data-placement="review-after-experience"]:has(ins[data-ad-status="unfilled"]) { display: none; }
 .article-video { margin: 40px 0; }
 .article-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; background: #27262b; }
 .article-video figcaption { margin-top: 9px; color: var(--muted); font-family: var(--font-serif), Georgia, serif; font-size: 12px; }
@@ -432,7 +435,7 @@ a:hover .art-image { transform: scale(1.035); }
 .review-place-actions a:focus-visible, .review-jump-links a:focus-visible, .review-verdict-more summary:focus-visible { outline: 3px solid var(--orange-ink); outline-offset: 4px; }
 .cms-review-content { max-width: 760px; margin: 0 auto; }
 .cms-review-content > section { scroll-margin-top: 110px; }
-.cms-review-content > section + section { margin-top: 48px; }
+.cms-review-content > section ~ section { margin-top: 48px; }
 .review-gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 20px; }
 .review-gallery-grid figure { min-width: 0; margin: 0; }
 .review-gallery-grid button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }

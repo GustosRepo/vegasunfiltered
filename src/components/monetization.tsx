@@ -27,7 +27,7 @@ export function AdSlot({
   if (!enabled || !children) return null;
   return (
     <aside aria-label="Advertisement" className="ad-slot" data-placement={placement}>
-      <span className="ad-slot-label">ADVERTISEMENT</span>
+      <span className="ad-slot-label">ADVERTISEMENTS</span>
       {children}
     </aside>
   );

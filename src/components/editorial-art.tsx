@@ -5,6 +5,7 @@ type EditorialArtProps = {
   alt: string;
   className?: string;
   priority?: boolean;
+  showDevelopmentLabel?: boolean;
 };
 
 export function EditorialArt({
@@ -12,6 +13,7 @@ export function EditorialArt({
   alt,
   className = "",
   priority = false,
+  showDevelopmentLabel = false,
 }: EditorialArtProps) {
   return (
     <div className={`editorial-art ${className}`}>
@@ -19,11 +21,11 @@ export function EditorialArt({
         alt={alt}
         className="art-image"
         fill
-        priority={priority}
+        preload={priority}
         sizes="(max-width: 720px) 100vw, (max-width: 1100px) 70vw, 55vw"
         src={src}
       />
-      <span className="art-label">DEVELOPMENT ARTWORK</span>
+      {showDevelopmentLabel && <span className="art-label">DEVELOPMENT ARTWORK</span>}
     </div>
   );
 }

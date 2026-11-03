@@ -28,6 +28,17 @@ export function hasReviewContent(content: EditorNode): boolean {
     || Boolean(content.content?.some(hasReviewContent));
 }
 
+export function hasSubstantialReviewExperience(content: EditorNode): boolean {
+  let paragraphs = 0;
+  const text = (node: EditorNode): string => {
+    if (node.type === "paragraph" && hasReviewContent(node)) paragraphs += 1;
+    return [node.text ?? "", ...(node.content ?? []).map(text)].join(" ");
+  };
+  const words = text(content).trim().split(/\s+/).filter(Boolean).length;
+  // Editorial placement threshold, not an AdSense policy or publishing limit.
+  return paragraphs >= 2 && words >= 100;
+}
+
 // Shared by the public renderer and editor so new reviews use the same sections.
 export const reviewSections = [
   { field: "tried", id: "what-we-tried", title: "What we tried", aliases: ["What we ordered"] },

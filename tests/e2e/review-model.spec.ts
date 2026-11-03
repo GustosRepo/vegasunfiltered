@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { articleDraftSchema, isEditorDocument, neighborhoodSchema, restaurantSchema, reviewTemplateSchema } from "../../src/lib/cms-schemas";
 import { migrateSection, reviewSection } from "../../src/lib/content";
 import { getArticleCanonicalUrl } from "../../src/lib/article-canonical";
-import { blankReviewDocument, blankReviewTemplate, hasReviewContent, quickVerdictPreview, readReviewTemplate, reviewPlainText, withoutRepeatedSectionLabel, withReviewTemplate } from "../../src/lib/review-template";
+import { blankReviewDocument, blankReviewTemplate, hasReviewContent, hasSubstantialReviewExperience, quickVerdictPreview, readReviewTemplate, reviewPlainText, withoutRepeatedSectionLabel, withReviewTemplate } from "../../src/lib/review-template";
 
 test("neighborhood slugs normalize common input and explain unsupported characters", () => {
   const slug = neighborhoodSchema.shape.slug;
@@ -81,6 +81,16 @@ test("review template preserves legacy body and round-trips optional sections", 
   expect(hasReviewContent(body)).toBe(true);
   expect(hasReviewContent({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "  \n " }] }] })).toBe(false);
   expect(hasReviewContent({ type: "image", attrs: { src: "/photo.png" } })).toBe(true);
+});
+
+test("ad eligibility counts only substantial experience paragraphs, excluding optional metadata", () => {
+  const paragraph = { type: "paragraph", content: [{ type: "text", text: "word ".repeat(50) }] };
+  expect(hasSubstantialReviewExperience({ type: "doc", content: [paragraph, paragraph] })).toBe(true);
+  expect(hasSubstantialReviewExperience({ type: "doc", content: [paragraph] })).toBe(false);
+  expect(hasSubstantialReviewExperience(blankReviewDocument())).toBe(false);
+  expect(hasSubstantialReviewExperience(withReviewTemplate(blankReviewDocument(), {
+    ...blankReviewTemplate(), quickVerdict: "word ".repeat(200), tried: { type: "doc", content: [paragraph, paragraph] },
+  }))).toBe(false);
 });
 
 test("review template validates dates, photos, limits, and rich text without nested templates", () => {

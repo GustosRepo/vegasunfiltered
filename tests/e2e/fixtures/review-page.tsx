@@ -5,6 +5,7 @@ import { ArticleEditor } from "@/components/admin/article-editor";
 import { Suspense } from "react";
 import "@/app/(admin)/admin/admin.css";
 import { IdleSession } from "@/components/admin/idle-session";
+import Link from "next/link";
 
 const text = (value: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: value }] }] });
 const template = {
@@ -72,6 +73,38 @@ export function ActivityReviewTestPage() {
 
 export function LegacyReviewTestPage() {
   return <CmsPublishedArticle article={{ ...base, title: "Legacy review!", sponsored: false, overallScore: null, content: text("The original review is preserved without a structured template.") }} isPreview />;
+}
+
+const advertisingReview: PublishedCmsArticle = {
+  ...base, sponsored: false, indexable: true, slug: "advertising-review",
+  content: withReviewTemplate({ type: "doc", content: [
+    ...text("We arrived together before the evening rush and ordered several dishes to share. The service was friendly, the room felt relaxed, and we had enough time to enjoy the meal. ".repeat(3)).content,
+    ...text("The food arrived hot and the portions were generous. We paid for our own visit and took notes on the experience, the price, and what we would recommend ordering again. ".repeat(3)).content,
+  ] }, template),
+};
+
+export function AdvertisingReviewTestPage() {
+  return <><CmsPublishedArticle article={advertisingReview} /><Link href="/e2e-review-fixture/ads-next">Next test review</Link></>;
+}
+
+export function AdvertisingNextReviewTestPage() {
+  return <><CmsPublishedArticle article={{ ...advertisingReview, id: "123e4567-e89b-42d3-a456-426614174099", slug: "next-advertising-review", reviewType: "activity", categorySlug: "activities", categoryName: "Activities" }} /><Link href="/e2e-review-fixture/ads">Previous test review</Link></>;
+}
+
+export function AdvertisingPreviewTestPage() {
+  return <CmsPublishedArticle article={advertisingReview} isPreview />;
+}
+
+export function AdvertisingNoIndexTestPage() {
+  return <CmsPublishedArticle article={{ ...advertisingReview, indexable: false }} />;
+}
+
+export function AdvertisingShortTestPage() {
+  return <CmsPublishedArticle article={{ ...base, indexable: true }} />;
+}
+
+export function AdvertisingEmptyTestPage() {
+  return <CmsPublishedArticle article={{ ...advertisingReview, content: withReviewTemplate(blankReviewDocument(), template) }} />;
 }
 
 export function ReviewEditorTestPage() {

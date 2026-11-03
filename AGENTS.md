@@ -37,6 +37,9 @@ and disclosures, then related published reviews/category navigation.
   `src/app/globals.css`; do not duplicate them in the admin stylesheet.
 - Exclude the cover image from the additional gallery without deleting saved
   selections. Hide an empty gallery. Do not display placeholder social links.
+- Article/card covers must not display the development-artwork badge. The badge
+  is opt-in only for explicitly identified development illustrations, such as
+  the homepage hero; never enable it for uploaded editorial photos.
 - Related links must use real, indexable published reviews, exclude the current
   review, and match its section. Private previews must not fetch public feeds.
 - Use `getArticleCanonicalUrl` for article canonical metadata, social URLs,
@@ -44,6 +47,14 @@ and disclosures, then related published reviews/category navigation.
   production origin, current review type, and slug. There is no editable
   canonical field. Ignore legacy overrides and clear them on review save;
   do not reintroduce manual overrides without the owner's explicit request.
+- Keep the single AdSense In-article unit (`5213709246`) after Our experience
+  in the shared template. Limit it to public, indexable reviews with at least
+  two nonempty experience paragraphs and 100 words; this is an editorial choice.
+  Keep previews, short/empty reviews, and non-review pages free of ad loading.
+  Load the provider library once, initialize each mounted unit once after it
+  has usable width, and preserve responsive spacing. Do not add timer refreshes
+  or insert ad code into saved review text. Browser QA must mock the provider;
+  never request or click live ads to test the integration.
 
 Preserve these rules when extending the CMS. Update the shared editor prompts,
 README, and regression coverage if the owner approves a future format change.

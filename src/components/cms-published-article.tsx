@@ -60,7 +60,7 @@ export function CmsPublishedArticle({ article, isPreview = false, relatedReviews
     </div>
     {article.image && <div className="page-shell cms-public-hero"><figure className="article-figure"><Image alt={article.imageAlt} height={900} src={article.image} unoptimized width={1600} preload />{article.imageCaption && <figcaption className="image-caption">{article.imageCaption}</figcaption>}</figure></div>}
     <div className="page-shell review-summary"><ReviewDetails article={article} template={template} /><ReviewJumpLinks content={article.content} template={template} /></div>
-    <article className="page-shell cms-public-content"><CmsReviewContent content={article.content} template={template} coverImage={article.image} /><p className="article-footnote"><Link href="/editorial-policy">How we report and correct our work</Link></p></article>
+    <article className="page-shell cms-public-content"><CmsReviewContent content={article.content} template={template} coverImage={article.image} allowAds={!isPreview && article.indexable} reviewId={article.id} /><p className="article-footnote"><Link href="/editorial-policy">How we report and correct our work</Link></p></article>
     {article.receipt && <div className="page-shell"><TheReceipt receipt={article.receipt} /></div>}
     {article.affiliateLinks.length > 0 && <section className="page-shell related-stories" aria-label="Affiliate links">
       <AffiliateDisclosure />

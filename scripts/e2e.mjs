@@ -60,7 +60,12 @@ try {
     writeFileSync(join(reviewRoute, "empty/page.tsx"), 'export { EmptyReviewTestPage as default } from "../fixture";\n');
     mkdirSync(join(reviewRoute, "canonical"), { recursive: true });
     writeFileSync(join(reviewRoute, "canonical/page.tsx"), 'export { ReviewCanonicalTestPage as default, reviewCanonicalTestMetadata as generateMetadata } from "../fixture";\n');
-    for (const [path, component] of [["activity", "ActivityReviewTestPage"], ["legacy", "LegacyReviewTestPage"]]) {
+    for (const [path, component] of [
+      ["activity", "ActivityReviewTestPage"], ["legacy", "LegacyReviewTestPage"],
+      ["ads", "AdvertisingReviewTestPage"], ["ads-next", "AdvertisingNextReviewTestPage"],
+      ["ads-preview", "AdvertisingPreviewTestPage"], ["ads-noindex", "AdvertisingNoIndexTestPage"],
+      ["ads-short", "AdvertisingShortTestPage"], ["ads-empty", "AdvertisingEmptyTestPage"],
+    ]) {
       const directory = join(reviewRoute, path);
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, "page.tsx"), `export { ${component} as default } from "../fixture";\n`);

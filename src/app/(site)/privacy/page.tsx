@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy | Vegas Unfiltered",
-  description: "How the Vegas Unfiltered development preview handles visitor data.",
+  description: "How Vegas Unfiltered handles website requests, advertising, and visitor choices.",
   path: "/privacy",
 });
 
@@ -13,22 +13,36 @@ export default async function PrivacyPage() {
     <InfoPage
       eyebrow="PLAIN-LANGUAGE PRIVACY"
       title="Privacy"
-      intro="This development preview does not ask you to create an account or submit personal information."
+      intro="This notice describes the services used to deliver Vegas Unfiltered and advertising on our public reviews."
       sections={[
         {
-          heading: "Forms, analytics, and advertising",
+          heading: "Website requests",
           paragraphs: [
-            "There is no working newsletter signup, advertising network, affiliate tracking, or analytics integration on this preview. The newsletter panel is informational only and does not collect an email address.",
-            "The hosting provider may process technical request data to deliver and protect the website. Configure and document any additional analytics, advertising, or email services before enabling them.",
+            "Our hosting and media providers process technical request information, such as IP addresses and browser details, to deliver and protect the website and its photos.",
+            "There is no working newsletter signup or separate visitor analytics integration. The newsletter panel does not collect an email address. The editorial sign-in is for invited staff and uses cookies to maintain their sessions.",
           ],
         },
         {
-          heading: "Changes before launch",
+          heading: "Advertising",
           paragraphs: [
-            "This notice describes the current preview, not every service that might be added later. If the site begins collecting information, this policy must be updated to identify what is collected, why, and how visitors can contact the publisher.",
+            "Eligible public reviews include Google AdSense advertising. When an ad loads, Google and its advertising partners may process information about your browser, device, IP address, and interactions, and may use cookies or similar technologies to serve and measure ads.",
+            "The ads you see and the choices available depend on your location, consent, and Google's account and advertising settings. Where a Google privacy message is shown, use its controls to manage your choices. Google My Ad Center also provides advertising controls for your Google account.",
+            "Advertising is labeled separately from our reviews. Advertisers do not determine our editorial scores or conclusions.",
+          ],
+        },
+        {
+          heading: "Your choices and future changes",
+          paragraphs: [
+            "Your browser provides controls for cookies and other website data. Restricting cookies or blocking advertising scripts may affect ad delivery.",
+            "We update this notice when the services used by the website change.",
           ],
         },
       ]}
-    />
+    >
+      <div className="about-links">
+        <a href="https://policies.google.com/technologies/partner-sites" rel="noopener noreferrer" target="_blank">How Google uses information from sites</a>
+        <a href="https://myadcenter.google.com/" rel="noopener noreferrer" target="_blank">Google My Ad Center</a>
+      </div>
+    </InfoPage>
   );
 }

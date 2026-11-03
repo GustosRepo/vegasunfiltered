@@ -1,8 +1,10 @@
 import { CmsArticleBody } from "@/components/cms-article-body";
 import { ReviewGallery } from "@/components/review-gallery";
+import { Fragment } from "react";
+import { ReviewInArticleAd } from "@/components/review-in-article-ad";
 import type { PublishedCmsArticle } from "@/lib/cms-content";
 import type { EditorNode, ReviewTemplate } from "@/lib/cms-schemas";
-import { blankReviewTemplate, hasReviewContent, quickVerdictPreview, reviewSections, withoutRepeatedSectionLabel } from "@/lib/review-template";
+import { blankReviewTemplate, hasReviewContent, hasSubstantialReviewExperience, quickVerdictPreview, reviewSections, withoutRepeatedSectionLabel } from "@/lib/review-template";
 
 export function ReviewQuickVerdict({ text }: { text: string }) {
   const { summary, remainder } = quickVerdictPreview(text);
@@ -53,13 +55,16 @@ export function ReviewJumpLinks({ content, template }: { content: EditorNode; te
   </nav>;
 }
 
-export function CmsReviewContent({ content, template, coverImage = "" }: { content: EditorNode; template: ReviewTemplate | null; coverImage?: string }) {
+export function CmsReviewContent({ content, template, coverImage = "", allowAds = false, reviewId }: { content: EditorNode; template: ReviewTemplate | null; coverImage?: string; allowAds?: boolean; reviewId?: string }) {
   // Hide the cover's duplicate gallery entry without changing stored selections.
   const photos = template?.gallery.filter((photo) => photo.url !== coverImage) ?? [];
   return <div className="cms-review-content">
-    {narrativeSections(content, template).map(({ id, title, content: body }) => <section id={id} aria-labelledby={`${id}-heading`} key={id}>
-      <h2 id={`${id}-heading`}>{title}</h2><CmsArticleBody content={body} />
-    </section>)}
+    {narrativeSections(content, template).map(({ id, title, content: body }) => <Fragment key={id}>
+      <section id={id} aria-labelledby={`${id}-heading`}>
+        <h2 id={`${id}-heading`}>{title}</h2><CmsArticleBody content={body} />
+      </section>
+      {id === "our-experience" && allowAds && hasSubstantialReviewExperience(body) && <ReviewInArticleAd key={reviewId} />}
+    </Fragment>)}
     <ReviewGallery photos={photos} />
   </div>;
 }
