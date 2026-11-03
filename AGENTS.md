@@ -55,11 +55,15 @@ and disclosures, then related published reviews/category navigation.
 - Keep the single AdSense In-article unit (`5213709246`) after Our experience
   in the shared template. Limit it to public, indexable reviews with at least
   two nonempty experience paragraphs and 100 words; this is an editorial choice.
-  Keep previews, short/empty reviews, and non-review pages free of ad loading.
+  Keep previews, short/empty reviews, and informational pages free of ad loading.
   Load the provider library once, initialize each mounted unit once after it
   has usable width, and preserve responsive spacing. Do not add timer refreshes
   or insert ad code into saved review text. Browser QA must mock the provider;
   never request or click live ads to test the integration.
+- The homepage uses responsive Display unit `8538710734` once after Our latest
+  reviews and before Dinner or an adventure. Hide it for an empty publication.
+  Both homepage and article ads must use the shared `AdSenseUnit` lifecycle and
+  library ID to avoid duplicate script loading on navigation.
 
 Preserve these rules when extending the CMS. Update the shared editor prompts,
 README, and regression coverage if the owner approves a future format change.

@@ -63,6 +63,7 @@ try {
     for (const [path, component] of [
       ["activity", "ActivityReviewTestPage"], ["legacy", "LegacyReviewTestPage"],
       ["ads", "AdvertisingReviewTestPage"], ["ads-next", "AdvertisingNextReviewTestPage"],
+      ["ads-homepage", "AdvertisingHomepageTestPage"],
       ["ads-preview", "AdvertisingPreviewTestPage"], ["ads-noindex", "AdvertisingNoIndexTestPage"],
       ["ads-short", "AdvertisingShortTestPage"], ["ads-empty", "AdvertisingEmptyTestPage"],
     ]) {

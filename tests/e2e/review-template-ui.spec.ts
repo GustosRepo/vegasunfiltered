@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./browser-test";
 
 test("SEO preview follows the review type, metadata fallbacks and social image selection", async ({ page }) => {
   await page.goto("/e2e-review-fixture/editor");

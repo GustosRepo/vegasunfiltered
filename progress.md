@@ -2,6 +2,20 @@
 
 Last updated: 2026-11-03
 
+## Homepage responsive ad unit (November 3)
+
+- Added the owner-supplied responsive Display unit `8538710734` after Our latest
+  reviews and before Dinner or an adventure. Empty publications omit the unit.
+- Homepage and review placements share one AdSense library and initialization
+  component. Cached navigation preserves filled units without repeat requests.
+  Reserved space, advertisement labels, and blocked/unfilled handling apply to both.
+- Updated Privacy, README, and AGENTS for both placements. Browser QA blocks real
+  ad providers by default and uses explicit mocks for integration checks.
+- Validation: isolated production build, TypeScript, targeted lint, whitespace
+  checks, and all 115 public/editor/model/config/advertising tests passed.
+  Desktop/mobile tests cover homepage placement and navigation to reviews and back.
+- Changes are local and require deployment. No production deployment was performed.
+
 ## Article cover labels (November 3)
 
 - Made the development-artwork badge opt-in in the shared image component.

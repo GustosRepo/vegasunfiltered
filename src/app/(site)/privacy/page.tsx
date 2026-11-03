@@ -13,7 +13,7 @@ export default async function PrivacyPage() {
     <InfoPage
       eyebrow="PLAIN-LANGUAGE PRIVACY"
       title="Privacy"
-      intro="This notice describes the services used to deliver Vegas Unfiltered and advertising on our public reviews."
+      intro="This notice describes the services used to deliver Vegas Unfiltered and advertising on our public pages."
       sections={[
         {
           heading: "Website requests",
@@ -25,7 +25,7 @@ export default async function PrivacyPage() {
         {
           heading: "Advertising",
           paragraphs: [
-            "Eligible public reviews include Google AdSense advertising. When an ad loads, Google and its advertising partners may process information about your browser, device, IP address, and interactions, and may use cookies or similar technologies to serve and measure ads.",
+            "Our homepage and eligible public reviews include Google AdSense advertising. When an ad loads, Google and its advertising partners may process information about your browser, device, IP address, and interactions, and may use cookies or similar technologies to serve and measure ads.",
             "The ads you see and the choices available depend on your location, consent, and Google's account and advertising settings. Where a Google privacy message is shown, use its controls to manage your choices. Google My Ad Center also provides advertising controls for your Google account.",
             "Advertising is labeled separately from our reviews. Advertisers do not determine our editorial scores or conclusions.",
           ],

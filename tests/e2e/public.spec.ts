@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./browser-test";
 
 for (const path of ["/", "/restaurants", "/activities", "/about", "/editorial-policy", "/privacy", "/affiliate-disclosure", "/contact"]) {
   test(`public page ${path} renders without runtime errors`, async ({ page }) => {
@@ -46,6 +46,7 @@ test("empty publication shows no sample cards or review links", async ({ page })
   test.skip(process.env.E2E_PUBLIC_ONLY !== "1", "Requires the isolated empty publication.");
   await page.goto("/");
   await expect(page.getByText("Our first reviews are on the way.", { exact: false })).toBeVisible();
+  await expect(page.locator('ins.adsbygoogle, script[src*="adsbygoogle.js"], .homepage-ad')).toHaveCount(0);
   await expect(page.locator('a[href*="cheap-eats-las-vegas"], a[href*="chinatown"], a[href*="las-vegas-happy-hours"], a[href*="las-vegas-on-a-budget"]')).toHaveCount(0);
   for (const path of ["/restaurants", "/activities"]) {
     await page.goto(path);
@@ -114,14 +115,14 @@ test("About page reflects the owner's perspective without invented identity clai
   await expect(page.getByRole("link", { name: "How I review", exact: true })).toHaveAttribute("href", "/editorial-policy");
 });
 
-test("non-review public pages expose only AdSense verification and admin stays free of ad code", async ({ page }) => {
+test("informational pages expose only AdSense verification and admin stays free of ad code", async ({ page }) => {
   const adRequests: string[] = [];
   page.on("request", (request) => {
     if (/googlesyndication\.com|doubleclick\.net|fundingchoicesmessages\.google\.com/.test(request.url())) adRequests.push(request.url());
   });
-  await page.goto("/");
-  await expect(page.locator('meta[name="google-adsense-account"]')).toHaveAttribute("content", "ca-pub-8863066373093222");
   await page.goto("/about");
+  await expect(page.locator('meta[name="google-adsense-account"]')).toHaveAttribute("content", "ca-pub-8863066373093222");
+  await page.goto("/privacy");
   await expect(page.locator('meta[name="google-adsense-account"]')).toHaveCount(1);
   await expect(page.locator('script[src*="adsbygoogle"]')).toHaveCount(0);
   await page.goto("/admin/login");

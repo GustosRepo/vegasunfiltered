@@ -414,7 +414,7 @@ The public site can still run without Supabase; CMS-backed articles and admin
 data require the public Supabase URL and publishable key described above. The
 newsletter remains an inactive status panel. Before enabling signup, configure
 an email provider, server-side validation and consent handling, and update the
-Privacy page. Public reviews use the manual AdSense unit described below.
+Privacy page. The homepage and public reviews use the manual AdSense units below.
 Affiliate tracking and separate visitor analytics/reporting are not configured.
 Sponsored labels and affiliate disclosures remain separate from display ads.
 
@@ -424,16 +424,22 @@ The owner supplied AdSense publisher `ca-pub-8863066373093222` and In-article
 unit `5213709246`. The shared review template inserts one labeled unit after
 **Our experience** on public, indexable reviews with at least two nonempty
 experience paragraphs and 100 words. This is an editorial threshold, not a
-Google requirement. Private previews, short/empty reviews, and non-review pages
-load no ad unit or ad library. Existing reviews inherit the placement without
-editing their saved content.
+Google requirement. Private previews, short/empty reviews, and informational
+pages load no ad unit or ad library. Existing reviews inherit the placement
+without editing their saved content.
 
-`ReviewInArticleAd` uses the supplied fluid In-article attributes, loads the
-AdSense library asynchronously through `next/script`, and initializes each
+The homepage uses responsive Display unit `8538710734`, with `data-ad-format`
+set to `auto` and full-width responsiveness enabled. It appears once after the
+latest review cards and before the restaurant/activity introduction, only when
+there is at least one published indexable review. An empty publication has no
+homepage slot or ad loading.
+
+`AdSenseUnit` provides both placements, loads the AdSense library asynchronously
+through `next/script` with one shared library ID, and initializes each
 mounted unit once after the library is ready and its width is usable. The
 library is shared across client navigation; the unit is keyed by review ID.
 Next.js keeps previously visited pages in Activity: a filled unit is preserved
-when returning to a cached review, without another request. Pending units on
+when returning to a cached homepage or review, without another request. Pending units on
 hidden pages are excluded from initialization if navigation beats script loading.
 There is no timer refresh or custom ad creative. The wrapper reserves responsive
 space, expands with fluid content, collapses for Google's `unfilled` status, and
@@ -448,6 +454,9 @@ message publication, regional choices, and authorized `ads.txt` record cannot be
 verified from the repository and are not established by merely supplying ad code.
 The Privacy page now describes Google advertising and links to Google's data-use
 and ad-choice information.
+
+Browser contexts block real advertising by default; explicit test mocks override
+that block for integration checks.
 
 No separate analytics tag or reporting connector has been installed. The admin
 Analytics screen checks configuration presence only; detecting credentials is
@@ -520,7 +529,7 @@ instructions for installing the public GA4 tag.
 
 #### Phase 3: advertising
 
-- Google AdSense and the owner-supplied In-article unit are implemented above.
+- Google AdSense and the owner-supplied homepage and In-article units are implemented above.
   Account approval and live delivery still require verification in AdSense;
   do not promise acceptance, minimum traffic, or income.
 - Finish original content, public contact/privacy/disclosure pages, consent

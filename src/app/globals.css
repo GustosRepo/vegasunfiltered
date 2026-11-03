@@ -264,9 +264,10 @@ a:hover .art-image { transform: scale(1.035); }
 .disclosure-note a, .article-details a, .related-stories a { text-decoration: underline; text-underline-offset: 3px; }
 .ad-slot { margin: 35px 0; padding: 18px; border: 1px solid var(--line); }
 .ad-slot-label { display: block; margin-bottom: 10px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .14em; }
-.ad-slot[data-placement="review-after-experience"] { width: 100%; min-width: 0; min-height: 280px; margin: 40px 0; padding: 16px 0; border: 0; border-block: 1px solid var(--line); text-align: center; }
-.ad-slot[data-placement="review-after-experience"] .adsbygoogle { width: 100%; }
-.ad-slot[data-placement="review-after-experience"]:has(ins[data-ad-status="unfilled"]) { display: none; }
+.ad-slot[data-placement="review-after-experience"], .ad-slot[data-placement="homepage-after-reviews"] { width: 100%; min-width: 0; min-height: 280px; margin: 40px 0; padding: 16px 0; border: 0; border-block: 1px solid var(--line); text-align: center; }
+.ad-slot .adsbygoogle { width: 100%; }
+.ad-slot:has(ins[data-ad-status="unfilled"]) { display: none; }
+.homepage-ad > .ad-slot { margin: 0 0 48px; }
 .article-video { margin: 40px 0; }
 .article-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; background: #27262b; }
 .article-video figcaption { margin-top: 9px; color: var(--muted); font-family: var(--font-serif), Georgia, serif; font-size: 12px; }

@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import "@/app/(admin)/admin/admin.css";
 import { IdleSession } from "@/components/admin/idle-session";
 import Link from "next/link";
+import { HomeContent } from "@/components/home-content";
+import { toStorySummary } from "@/lib/cms-content";
 
 const text = (value: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: value }] }] });
 const template = {
@@ -85,6 +87,10 @@ const advertisingReview: PublishedCmsArticle = {
 
 export function AdvertisingReviewTestPage() {
   return <><CmsPublishedArticle article={advertisingReview} /><Link href="/e2e-review-fixture/ads-next">Next test review</Link></>;
+}
+
+export function AdvertisingHomepageTestPage() {
+  return <><HomeContent reviews={[toStorySummary(advertisingReview)]} /><Link href="/e2e-review-fixture/ads">Open test review</Link></>;
 }
 
 export function AdvertisingNextReviewTestPage() {

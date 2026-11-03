@@ -1,4 +1,5 @@
 import { test, expect, png, saveForm } from "./fixtures";
+import { blockRealAds } from "./browser-test";
 
 test("admin warns before inactivity logout and stay signed in renews the deadline", async ({ ownerPage: page, backend }) => {
   const { error } = await backend.admin.from("cms_idle_sessions").update({
@@ -86,6 +87,7 @@ test("article draft autosaves, previews privately, publishes, unpublishes, archi
   await expect(page.getByRole("heading", { name: "Quick verdict", exact: true })).toBeVisible();
   await expect(page.getByText("Yes, for our next date night.")).toBeVisible();
   const anonymous = await browser.newContext();
+  await blockRealAds(anonymous);
   try {
     const visitor = await anonymous.newPage();
     await visitor.goto(`/admin/reviews/${id}/preview`);
@@ -168,6 +170,7 @@ test("SEO indexing can be enabled and disabled after publication without republi
   await page.goto(`/admin/reviews/${article.id}/edit?tab=seo`);
   await expect(page.getByRole("tab", { name: "SEO", exact: true })).toHaveAttribute("aria-selected", "true");
   const visitor = await browser.newPage();
+  await blockRealAds(visitor.context());
   try {
     for (const enabled of [true, false, true]) {
       await page.getByLabel(/Allow search engines/).setChecked(enabled);

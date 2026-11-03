@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Page } from "./browser-test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 type Role = "owner" | "editor" | "contributor" | "unassigned";

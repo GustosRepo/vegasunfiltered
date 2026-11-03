@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./browser-test";
 
 const adScript = "**/pagead2.googlesyndication.com/pagead/js/adsbygoogle.js*";
 
@@ -25,6 +25,39 @@ async function mockAdSense(page: Page, status = "filled") {
 async function adRequests(page: Page) {
   return page.evaluate(() => (window as Window & { __testAdRequests?: number }).__testAdRequests ?? 0);
 }
+
+test("homepage display ad follows the reviews and shares its library with article ads", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const libraries = await mockAdSense(page);
+  await page.goto("/e2e-review-fixture/ads-homepage");
+  const ad = page.locator('ins.adsbygoogle:visible');
+  await expect(ad).toHaveCount(1);
+  await expect(ad).toHaveAttribute("data-ad-client", "ca-pub-8863066373093222");
+  await expect(ad).toHaveAttribute("data-ad-slot", "8538710734");
+  await expect(ad).toHaveAttribute("data-ad-format", "auto");
+  await expect(ad).toHaveAttribute("data-full-width-responsive", "true");
+  await expect(ad).not.toHaveAttribute("data-ad-layout", "in-article");
+  await expect(ad).toHaveAttribute("data-adsbygoogle-status", "done");
+  const wrapper = page.locator(".homepage-ad");
+  expect(await wrapper.evaluate((element) => element.previousElementSibling?.classList.contains("latest-section"))).toBe(true);
+  expect(await wrapper.evaluate((element) => element.nextElementSibling?.classList.contains("eat-section"))).toBe(true);
+  expect((await wrapper.locator(".ad-slot").boundingBox())!.height).toBeGreaterThanOrEqual(280);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await page.getByRole("link", { name: "Open test review", exact: true }).click();
+  await expect(page).toHaveURL(/\/ads$/);
+  await expect(page.locator('ins.adsbygoogle:visible')).toHaveAttribute("data-ad-slot", "5213709246");
+  await expect.poll(() => adRequests(page)).toBe(2);
+  await expect(page.locator('script[src*="adsbygoogle.js"]')).toHaveCount(1);
+  expect(libraries()).toBe(1);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/ads-homepage$/);
+  await expect(page.locator('ins.adsbygoogle:visible')).toHaveAttribute("data-ad-slot", "8538710734");
+  expect(await adRequests(page)).toBe(2);
+  expect(libraries()).toBe(1);
+  expect(errors).toEqual([]);
+});
 
 test("review uses the supplied ad once after the experience and reuses its script on navigation", async ({ page }) => {
   const errors: string[] = [];
